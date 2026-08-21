@@ -381,14 +381,16 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
                             <ui:Button Grid.Column="0" Content="Start Sniffing" Appearance="Primary" Margin="0,0,8,0" Padding="12,6" Command="{Binding ViewModel.StartSniffingCommand}" Icon="{ui:SymbolIcon Play24}"/>
                             <ui:Button Grid.Column="1" Content="Stop &amp; Analyze" Appearance="Danger" Margin="0,0,8,0" Padding="12,6" Command="{Binding ViewModel.StopSniffingCommand}" Icon="{ui:SymbolIcon Stop24}"/>
-                            <ui:Button Grid.Column="2" Content="Clear" Margin="0,0,12,0" Padding="10,6" Command="{Binding ViewModel.ClearCapturedEventsCommand}" Icon="{ui:SymbolIcon Delete24}"/>
+                            <ui:Button Grid.Column="2" Content="Clear" Margin="0,0,8,0" Padding="10,6" Command="{Binding ViewModel.ClearCapturedEventsCommand}" Icon="{ui:SymbolIcon Delete24}"/>
+                            <ui:Button Grid.Column="3" Content="Restart as Admin" Appearance="Secondary" Margin="0,0,12,0" Padding="10,6" Command="{Binding ViewModel.RestartAsAdminCommand}" Icon="{ui:SymbolIcon Shield24}" Visibility="{Binding ViewModel.NonAdminVisibility}"/>
 
-                            <TextBlock Grid.Column="3" Text="{Binding ViewModel.SnifferStatus}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="4" Text="{Binding ViewModel.SnifferStatus}" VerticalAlignment="Center" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                     </Border>
 

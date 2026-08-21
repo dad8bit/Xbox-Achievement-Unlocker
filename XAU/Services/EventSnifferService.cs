@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -20,14 +21,59 @@ namespace XAU.Services
 
         public bool IsSniffing => _activeTraceMethod != null;
 
+        public bool IsAdministrator
+        {
+            get
+            {
+                try
+                {
+                    using var identity = WindowsIdentity.GetCurrent();
+                    var principal = new WindowsPrincipal(identity);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         public EventSnifferService(ILogger<EventSnifferService> logger)
         {
             _logger = logger;
         }
 
-        public async Task<bool> StartSniffingAsync()
+        public void RestartAsAdministrator()
         {
-            if (IsSniffing) return true;
+            try
+            {
+                var processPath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+                if (!string.IsNullOrEmpty(processPath))
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = processPath,
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    };
+                    Process.Start(psi);
+                    Environment.Exit(0);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to restart as administrator");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> StartSniffingAsync()
+        {
+            if (IsSniffing) return (true, "Sniffer is already active.");
+
+            if (!IsAdministrator)
+            {
+                return (false, "Administrator privileges are required by Windows to start an ETW network packet trace. Please restart XAU as Administrator.");
+            }
 
             return await Task.Run(() =>
             {
@@ -39,18 +85,17 @@ namespace XAU.Services
                     {
                         _sniffStartTime = DateTime.UtcNow;
                         _logger.LogInformation("ETW Sniffer started using method: {Method}", _activeTraceMethod);
-                        return true;
+                        return (true, $"ETW trace active via {_activeTraceMethod}. Launch your game and play now.");
                     }
                     else
                     {
-                        _logger.LogWarning("Failed to start ETW Sniffer trace. Administrator rights may be required.");
-                        return false;
+                        return (false, "Failed to start ETW trace session. Windows netsh/logman was unable to initialize the capture provider.");
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error starting ETW Sniffer trace");
-                    return false;
+                    return (false, $"Error starting trace: {ex.Message}");
                 }
             });
         }
@@ -114,7 +159,6 @@ namespace XAU.Services
                 string text = Encoding.ASCII.GetString(allBytes);
 
                 // Look for OneCollector / telemetry JSON structures: {"name": ... }
-                // Pattern matches OneCollector records or typical Xbox live event schemas
                 var jsonMatches = Regex.Matches(text, @"\{""name""\s*:\s*""[^""]+""[^{}]*\}|\{\s*""(?:ver|iKey|name|time|data)""\s*:[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", RegexOptions.Compiled);
 
                 int index = 1;

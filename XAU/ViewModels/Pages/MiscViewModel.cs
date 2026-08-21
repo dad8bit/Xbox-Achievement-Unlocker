@@ -56,6 +56,7 @@ namespace XAU.ViewModels.Pages
         private void InitializeViewModel()
         {
             IsInitialized = true;
+            IsAdmin = _eventSnifferService.IsAdministrator;
         }
 
         #region Spoofer
@@ -510,11 +511,15 @@ namespace XAU.ViewModels.Pages
         #region Event Sniffer
 
         [ObservableProperty] private bool _isSniffing = false;
+        [ObservableProperty] private bool _isAdmin = false;
         [ObservableProperty] private string _snifferStatus = "Ready to sniff telemetry and achievement events.";
         [ObservableProperty] private ObservableCollection<CapturedEventModel> _capturedEvents = new ObservableCollection<CapturedEventModel>();
         [ObservableProperty] private CapturedEventModel? _selectedCapturedEvent;
         [ObservableProperty] private string _selectedEventJson = "";
         [ObservableProperty] private string _capturedTokenText = "";
+
+        public Visibility NonAdminVisibility => IsAdmin ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility AdminVisibility => IsAdmin ? Visibility.Visible : Visibility.Collapsed;
 
         partial void OnSelectedCapturedEventChanged(CapturedEventModel? value)
         {
@@ -526,20 +531,44 @@ namespace XAU.ViewModels.Pages
         {
             if (IsSniffing) return;
 
-            SnifferStatus = "Starting ETW capture session (Administrator privileges may be required)...";
-            bool success = await _eventSnifferService.StartSniffingAsync();
+            if (!_eventSnifferService.IsAdministrator)
+            {
+                SnifferStatus = "Administrator privileges required to start ETW packet capture.";
+                var dialogResult = await _contentDialogService.ShowSimpleDialogAsync(new SimpleContentDialogCreateOptions
+                {
+                    Title = "Administrator Rights Required",
+                    Content = "Windows Event Tracing (ETW) requires Administrator privileges to capture game network traffic. Would you like to restart XAU as Administrator?",
+                    PrimaryButtonText = "Restart as Admin",
+                    CloseButtonText = "Cancel"
+                });
+
+                if (dialogResult == ContentDialogResult.Primary)
+                {
+                    _eventSnifferService.RestartAsAdministrator();
+                }
+                return;
+            }
+
+            SnifferStatus = "Starting ETW capture session...";
+            var (success, message) = await _eventSnifferService.StartSniffingAsync();
             if (success)
             {
                 IsSniffing = true;
-                SnifferStatus = "Sniffing active! Launch your game, trigger achievement actions, then click 'Stop & Analyze'.";
+                SnifferStatus = message;
                 _snackbarService.Show("Sniffer Started", "ETW trace active. Launch your game now.", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Record24), _snackbarDuration);
             }
             else
             {
                 IsSniffing = false;
-                SnifferStatus = "Failed to start ETW sniffer. Please make sure the app is running as Administrator.";
-                _snackbarService.Show("Sniffer Error", "Failed to start ETW trace session.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+                SnifferStatus = message;
+                _snackbarService.Show("Sniffer Error", message, ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), TimeSpan.FromSeconds(4));
             }
+        }
+
+        [RelayCommand]
+        public void RestartAsAdmin()
+        {
+            _eventSnifferService.RestartAsAdministrator();
         }
 
         [RelayCommand]

@@ -26,7 +26,9 @@ namespace XAU.Services
     public interface IEventSnifferService
     {
         bool IsSniffing { get; }
-        Task<bool> StartSniffingAsync();
+        bool IsAdministrator { get; }
+        void RestartAsAdministrator();
+        Task<(bool Success, string Message)> StartSniffingAsync();
         Task<SnifferAnalysisResult> StopAndAnalyzeAsync(string? currentXuid = null);
         string AnonymizeEventPayload(string rawJson, string? currentXuid = null);
     }
