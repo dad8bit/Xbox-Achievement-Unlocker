@@ -137,7 +137,7 @@ namespace XAU.Services
 
                 // Find XAU installation directory & exe
                 string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? Path.Combine(appDir, "XAU.exe");
+                string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? Path.Combine(appDir, "AF.exe");
                 int currentPid = Process.GetCurrentProcess().Id;
 
                 // Create update batch script
