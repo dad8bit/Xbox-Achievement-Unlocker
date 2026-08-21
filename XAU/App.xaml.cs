@@ -50,6 +50,7 @@ public partial class App
             services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ISettingsService, SettingsService>();
             services.AddSingleton<IEventsTokenService, EventsTokenService>();
+            services.AddSingleton<IEventSnifferService, EventSnifferService>();
             services.AddSingleton<IXboxMemoryScanner, XboxMemoryScanner>();
             services.AddSingleton<IOAuthService, OAuthService>();
             services.AddSingleton<XboxRestAPI>();

@@ -1,12 +1,13 @@
-using HtmlAgilityPack;
-using Microsoft.Data.Sqlite;
-using Newtonsoft.Json.Linq;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
 using System.DirectoryServices;
 using System.IO;
 using System.Text;
 using System.Windows.Input;
+using HtmlAgilityPack;
+using Microsoft.Data.Sqlite;
+using Newtonsoft.Json.Linq;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
@@ -21,6 +22,7 @@ namespace XAU.ViewModels.Pages
         private readonly ISessionService _sessionService;
         private readonly ISettingsService _settingsService;
         private readonly XboxRestAPI _xboxRestAPI;
+        private readonly IEventSnifferService _eventSnifferService;
         private readonly IContentDialogService _contentDialogService;
         private readonly ISnackbarService _snackbarService;
         private TimeSpan _snackbarDuration = TimeSpan.FromSeconds(2);
@@ -29,12 +31,14 @@ namespace XAU.ViewModels.Pages
             ISessionService sessionService,
             ISettingsService settingsService,
             XboxRestAPI xboxRestAPI,
+            IEventSnifferService eventSnifferService,
             ISnackbarService snackbarService,
             IContentDialogService contentDialogService)
         {
             _sessionService = sessionService;
             _settingsService = settingsService;
             _xboxRestAPI = xboxRestAPI;
+            _eventSnifferService = eventSnifferService;
             _snackbarService = snackbarService;
             _contentDialogService = contentDialogService;
         }
@@ -501,6 +505,115 @@ namespace XAU.ViewModels.Pages
                 _snackbarService.Show("Error", "Failed to export games list: " + ex.Message, ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
             }
         }
+        #endregion
+
+        #region Event Sniffer
+
+        [ObservableProperty] private bool _isSniffing = false;
+        [ObservableProperty] private string _snifferStatus = "Ready to sniff telemetry and achievement events.";
+        [ObservableProperty] private ObservableCollection<CapturedEventModel> _capturedEvents = new ObservableCollection<CapturedEventModel>();
+        [ObservableProperty] private CapturedEventModel? _selectedCapturedEvent;
+        [ObservableProperty] private string _selectedEventJson = "";
+        [ObservableProperty] private string _capturedTokenText = "";
+
+        partial void OnSelectedCapturedEventChanged(CapturedEventModel? value)
+        {
+            SelectedEventJson = value != null ? value.AnonymizedPayload : "";
+        }
+
+        [RelayCommand]
+        public async Task StartSniffing()
+        {
+            if (IsSniffing) return;
+
+            SnifferStatus = "Starting ETW capture session (Administrator privileges may be required)...";
+            bool success = await _eventSnifferService.StartSniffingAsync();
+            if (success)
+            {
+                IsSniffing = true;
+                SnifferStatus = "Sniffing active! Launch your game, trigger achievement actions, then click 'Stop & Analyze'.";
+                _snackbarService.Show("Sniffer Started", "ETW trace active. Launch your game now.", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Record24), _snackbarDuration);
+            }
+            else
+            {
+                IsSniffing = false;
+                SnifferStatus = "Failed to start ETW sniffer. Please make sure the app is running as Administrator.";
+                _snackbarService.Show("Sniffer Error", "Failed to start ETW trace session.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+            }
+        }
+
+        [RelayCommand]
+        public async Task StopSniffing()
+        {
+            if (!IsSniffing) return;
+
+            SnifferStatus = "Stopping trace and analyzing captured ETL packets...";
+            var result = await _eventSnifferService.StopAndAnalyzeAsync(_sessionService.Xuid);
+            IsSniffing = false;
+
+            CapturedEvents.Clear();
+            foreach (var ev in result.Events)
+            {
+                CapturedEvents.Add(ev);
+            }
+
+            if (!string.IsNullOrEmpty(result.EventsToken))
+            {
+                CapturedTokenText = result.EventsToken;
+                _sessionService.EventsToken = result.EventsToken;
+                _snackbarService.Show("Events Token Captured", "Extracted new Events token from game traffic.", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Key24), _snackbarDuration);
+            }
+
+            SnifferStatus = result.Summary;
+            if (CapturedEvents.Count > 0)
+            {
+                SelectedCapturedEvent = CapturedEvents[0];
+            }
+        }
+
+        [RelayCommand]
+        public void ClearCapturedEvents()
+        {
+            CapturedEvents.Clear();
+            SelectedCapturedEvent = null;
+            SelectedEventJson = "";
+            SnifferStatus = "Cleared captured events.";
+        }
+
+        [RelayCommand]
+        public void CopyEventJson()
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedEventJson))
+            {
+                Clipboard.SetText(SelectedEventJson);
+                _snackbarService.Show("Copied", "Event JSON copied to clipboard.", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Copy24), _snackbarDuration);
+            }
+        }
+
+        [RelayCommand]
+        public async Task ExportTemplate()
+        {
+            if (SelectedCapturedEvent == null || string.IsNullOrWhiteSpace(SelectedEventJson))
+            {
+                _snackbarService.Show("No Event Selected", "Please select an event from the list to export.", ControlAppearance.Caution, new SymbolIcon(SymbolRegular.Warning24), _snackbarDuration);
+                return;
+            }
+
+            var titleId = SelectedCapturedEvent.TitleId != "Unknown" ? SelectedCapturedEvent.TitleId : "EventTemplate";
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json",
+                FileName = $"{titleId}.json",
+                InitialDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "XAU", "Events")
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                await File.WriteAllTextAsync(saveFileDialog.FileName, SelectedEventJson);
+                _snackbarService.Show("Template Exported", $"Saved event template to {Path.GetFileName(saveFileDialog.FileName)}", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Save24), _snackbarDuration);
+            }
+        }
+
         #endregion
     }
 }
