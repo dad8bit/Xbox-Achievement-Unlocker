@@ -163,8 +163,10 @@ public class XboxRestAPI
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Profile);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var response = await _httpClient.GetStringAsync(BasicXboxAPIUris.GamertagUrl);
-        return JsonConvert.DeserializeObject<BasicProfile>(response);
+        var httpResponse = await _httpClient.GetAsync(BasicXboxAPIUris.GamertagUrl);
+        httpResponse.EnsureSuccessStatusCode();
+        var response = await httpResponse.Content.ReadAsStringAsync();
+        return !string.IsNullOrWhiteSpace(response) ? JsonConvert.DeserializeObject<BasicProfile>(response) : null;
     }
 
     public async Task<Profile?> GetProfileAsync(string xuid)
@@ -173,8 +175,10 @@ public class XboxRestAPI
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion5);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.PeopleHub);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var responseString = await _httpClient.GetStringAsync(string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid));
-        return JsonConvert.DeserializeObject<Profile>(responseString);
+        var httpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid));
+        httpResponse.EnsureSuccessStatusCode();
+        var responseString = await httpResponse.Content.ReadAsStringAsync();
+        return !string.IsNullOrWhiteSpace(responseString) ? JsonConvert.DeserializeObject<Profile>(responseString) : null;
     }
 
     public async Task<GameTitle?> GetGameTitleAsync(string xuid, string titleId)
@@ -195,8 +199,11 @@ public class XboxRestAPI
         var gameTitleHttpResponse = await _httpClient.PostAsync(
             string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid),
             new StringContent(JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept));
+        if (!gameTitleHttpResponse.IsSuccessStatusCode)
+            return null;
+
         var gameTitleResponse = await gameTitleHttpResponse.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<GameTitle>(gameTitleResponse);
+        return !string.IsNullOrWhiteSpace(gameTitleResponse) ? JsonConvert.DeserializeObject<GameTitle>(gameTitleResponse) : null;
     }
 
     public async Task<Gamepass?> GetGamepassMembershipAsync(string xuid)
@@ -208,8 +215,11 @@ public class XboxRestAPI
 
         SetDefaultHeaders();
         var gpuHttpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.GamepassMembershipUrl, xuid));
+        if (!gpuHttpResponse.IsSuccessStatusCode)
+            return null;
+
         var gpuResponse = await gpuHttpResponse.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<Gamepass>(gpuResponse);
+        return !string.IsNullOrWhiteSpace(gpuResponse) ? JsonConvert.DeserializeObject<Gamepass>(gpuResponse) : null;
     }
 
     public async Task<TitlesList?> GetGamesListAsync(string xuid)
@@ -223,8 +233,10 @@ public class XboxRestAPI
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.TitleHub);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var responseString = await _httpClient.GetStringAsync(string.Format(InterpolatedXboxAPIUrls.TitlesUrl, xuid));
-        return JsonConvert.DeserializeObject<TitlesList>(responseString);
+        var httpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.TitlesUrl, xuid));
+        httpResponse.EnsureSuccessStatusCode();
+        var responseString = await httpResponse.Content.ReadAsStringAsync();
+        return !string.IsNullOrWhiteSpace(responseString) ? JsonConvert.DeserializeObject<TitlesList>(responseString) : null;
     }
 
     public async Task<JObject?> GetGamertagProfileAsync(string gamertag)
