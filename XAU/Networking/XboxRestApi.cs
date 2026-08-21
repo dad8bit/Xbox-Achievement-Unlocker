@@ -2,66 +2,84 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using XAU.Services;
 using XAU.ViewModels.Pages;
 using XAU.ViewModels.Windows;
 
 public class XboxRestAPI
 {
     private readonly HttpClient _httpClient;
-
-    private readonly HttpClient _eventBasedClient; // Dumb, but needed for events for now
-
+    private readonly HttpClient _eventBasedClient;
     private readonly HttpClient _spooferClient;
 
-    // User specifics
-    private readonly string _xauth;
-    private readonly string _requestedResponseLanguage;
+    private readonly ISessionService? _sessionService;
+    private readonly ISettingsService? _settingsService;
+    private readonly ILogger<XboxRestAPI> _logger;
+    private readonly string? _explicitXauth;
+
+    public XboxRestAPI(
+        IHttpClientFactory httpClientFactory,
+        ISessionService sessionService,
+        ISettingsService settingsService,
+        ILogger<XboxRestAPI> logger)
+    {
+        _httpClient = httpClientFactory.CreateClient("XboxRestAPI");
+        _spooferClient = httpClientFactory.CreateClient("XboxSpoofer");
+        _eventBasedClient = httpClientFactory.CreateClient("XboxEvents");
+        _sessionService = sessionService;
+        _settingsService = settingsService;
+        _logger = logger;
+    }
 
     public XboxRestAPI(string xauth)
     {
-        _xauth = SanitizeXauth(xauth);
-        _requestedResponseLanguage = HomeViewModel.Settings.RegionOverride ? "en-GB" : System.Globalization.CultureInfo.CurrentCulture.Name;
-        var handler = new HttpClientHandler()
+        _explicitXauth = SanitizeXauth(xauth);
+        _logger = NullLogger<XboxRestAPI>.Instance;
+
+        var handler = new HttpClientHandler
         {
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
         };
         _httpClient = new HttpClient(handler);
         _spooferClient = new HttpClient(handler);
 
-        var insecureEventsHandler = new HttpClientHandler()
+        var insecureEventsHandler = new HttpClientHandler
         {
-            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
-            //This is an absolutely terrible idea but the stupid fucking events API just cries about SSL errors
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
         _eventBasedClient = new HttpClient(insecureEventsHandler);
     }
 
+    private string CurrentXauth =>
+        !string.IsNullOrEmpty(_explicitXauth)
+            ? _explicitXauth
+            : (_sessionService?.XAuthToken ?? "");
+
+    private string CurrentSpoofAuth =>
+        !string.IsNullOrEmpty(_explicitXauth)
+            ? _explicitXauth
+            : (_sessionService?.EffectiveSpoofToken ?? "");
+
+    private string CurrentResponseLanguage =>
+        (_settingsService?.Current.RegionOverride ?? false)
+            ? "en-GB"
+            : System.Globalization.CultureInfo.CurrentCulture.Name;
+
     private void SetDefaultHeaders()
     {
         _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, _xauth);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, _requestedResponseLanguage);
+        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentXauth);
+        _httpClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.AcceptEncoding, HeaderValues.AcceptEncoding);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-
-
-#if DEBUG
-        Console.WriteLine("Headers in _httpClient:");
-        foreach (var header in _httpClient.DefaultRequestHeaders)
-        {
-            if (header.Key == "Authorization") continue;
-            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-        }
-#endif
     }
 
     public static string SanitizeXauthPublic(string xauth) => SanitizeXauth(xauth);
-
-    public static string GetSpoofAuth() =>
-        string.IsNullOrWhiteSpace(HomeViewModel.SpoofXAUTH) ? HomeViewModel.XAUTH : HomeViewModel.SpoofXAUTH;
 
     private static string SanitizeXauth(string xauth)
     {
@@ -109,25 +127,16 @@ public class XboxRestAPI
         _spooferClient.DefaultRequestHeaders.Clear();
         _spooferClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion3);
         _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, _xauth);
+        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentSpoofAuth);
     }
 
     private void SetDefaultSpooferHeaders()
     {
         _spooferClient.DefaultRequestHeaders.Clear();
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, _xauth);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, _requestedResponseLanguage);
+        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentSpoofAuth);
+        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
         _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptEncoding, HeaderValues.AcceptEncoding);
         _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-
-#if DEBUG
-        Console.WriteLine("Headers in _spooferClient:");
-        foreach (var header in _spooferClient.DefaultRequestHeaders)
-        {
-            if (header.Key == "Authorization") continue;
-            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-        }
-#endif
     }
 
     private void SetDefaultEventBasedHeaders()
@@ -143,18 +152,9 @@ public class XboxRestAPI
         _eventBasedClient.DefaultRequestHeaders.Add("Client-Id", "NO_AUTH");
         _eventBasedClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Telemetry);
         _eventBasedClient.DefaultRequestHeaders.Add(HeaderNames.Connection, "close");
-        ;
-        var authxtoken = Regex.Replace(_xauth, @"XBL3\.0 x=\d+;", "XBL3.0 x=-;");
-        _eventBasedClient.DefaultRequestHeaders.Add("authxtoken", authxtoken);
 
-#if DEBUG
-        Console.WriteLine("Headers in _eventBasedClient:");
-        foreach (var header in _eventBasedClient.DefaultRequestHeaders)
-        {
-            if (header.Key == "authxtoken") continue;
-            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-        }
-#endif
+        var authxtoken = Regex.Replace(CurrentXauth, @"XBL3\.0 x=\d+;", "XBL3.0 x=-;");
+        _eventBasedClient.DefaultRequestHeaders.Add("authxtoken", authxtoken);
     }
 
     public async Task<BasicProfile?> GetBasicProfileAsync()
@@ -181,19 +181,20 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(xuid) || string.IsNullOrWhiteSpace(titleId))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
 
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-        var gameTitleRequest = new GameTitleRequest()
+        var gameTitleRequest = new GameTitleRequest
         {
             Pfns = null,
-            TitleIds = new List<string>() { titleId }
+            TitleIds = new List<string> { titleId }
         };
 
-        var gameTitleHttpResponse = await _httpClient.PostAsync(string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid), new StringContent(JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept));
+        var gameTitleHttpResponse = await _httpClient.PostAsync(
+            string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid),
+            new StringContent(JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept));
         var gameTitleResponse = await gameTitleHttpResponse.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<GameTitle>(gameTitleResponse);
     }
@@ -202,7 +203,6 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(xuid))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
 
@@ -216,7 +216,6 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(xuid))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
 
@@ -232,7 +231,6 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(gamertag))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
 
@@ -251,35 +249,35 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(xuid) || string.IsNullOrWhiteSpace(titleId))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
 
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
 
-        var stat = new GameStat()
+        var stat = new GameStat { TitleId = titleId };
+        var gameStatsRequest = new GameStatsRequest
         {
-            TitleId = titleId
+            Xuids = new List<string> { xuid },
+            Stats = new List<GameStat> { stat }
         };
-        var gameStatsRequest = new GameStatsRequest()
-        {
-            Xuids = new List<string>() { xuid },
-            Stats = new List<GameStat>() { stat }
-        };
-        var httpResponse = await _httpClient
-                .PostAsync(BasicXboxAPIUris.UserStatsUrl, new StringContent(JsonConvert.SerializeObject(gameStatsRequest), Encoding.UTF8, HeaderValues.Accept));
+        var httpResponse = await _httpClient.PostAsync(
+            BasicXboxAPIUris.UserStatsUrl,
+            new StringContent(JsonConvert.SerializeObject(gameStatsRequest), Encoding.UTF8, HeaderValues.Accept));
         var response = await httpResponse.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<GameStatsResponse>(response);
     }
+
+    public static string GetSpoofAuth() =>
+        HomeViewModel.SpoofXAUTH;
 
     private void SetPresenceHeaders()
     {
         _spooferClient.DefaultRequestHeaders.Clear();
         _spooferClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion3);
         _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, _requestedResponseLanguage);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, _xauth);
+        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
+        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentSpoofAuth);
     }
 
     private async Task<SpoofResult> PostSpoofAsync(string url, string requestBody, string apiName)
@@ -289,16 +287,23 @@ public class XboxRestAPI
             new StringContent(requestBody, Encoding.UTF8, HeaderValues.Accept));
         var responseBody = await response.Content.ReadAsStringAsync();
 
-#if DEBUG
-        Console.WriteLine($"{apiName} {(int)response.StatusCode} {response.StatusCode}: {responseBody}");
-#endif
-
         if (response.IsSuccessStatusCode)
         {
             return SpoofResult.Ok();
         }
 
-        return SpoofResult.Fail($"{apiName} {(int)response.StatusCode} {response.StatusCode}: {responseBody}");
+        var isRateLimited = response.StatusCode == HttpStatusCode.TooManyRequests
+            || (response.Headers.TryGetValues("Retry-After", out var retryAfterValues) && retryAfterValues.Any());
+
+        var isForbidden = response.StatusCode == HttpStatusCode.Forbidden;
+
+        var message = isRateLimited
+            ? "Xbox is rate limiting spoofing requests. Wait a moment before trying again."
+            : isForbidden
+                ? "Xbox rejected the spoof request (403 Forbidden). Refresh your token and try again."
+                : $"{apiName} failed with {(int)response.StatusCode} {response.StatusCode}. {responseBody}";
+
+        return SpoofResult.Fail(message);
     }
 
     public async Task<SpoofResult> SendHeartbeatAsync(string xuid, string spoofedTitleId)
@@ -309,19 +314,13 @@ public class XboxRestAPI
             return SpoofResult.Fail("Missing XUID or Title ID.");
         }
 
-        if (string.IsNullOrWhiteSpace(_xauth))
-        {
-            return SpoofResult.Fail("Missing XAUTH token. Log in again.");
-        }
-
         if (!ulong.TryParse(spoofedTitleId, out var titleId))
         {
             return SpoofResult.Fail("Title ID must be numeric.");
         }
 
         SetHeartbeatHeaders();
-        var requestBody =
-            $"{{\"titles\":[{{\"expiration\":600,\"id\":{titleId},\"state\":\"active\",\"sandbox\":\"RETAIL\"}}]}}";
+        var requestBody = $"{{\"titles\":[{{\"expiration\":600,\"id\":{titleId},\"state\":\"active\",\"sandbox\":\"RETAIL\"}}]}}";
         return await PostSpoofAsync(
             string.Format(InterpolatedXboxAPIUrls.HeartbeatUrl, xuid),
             requestBody,
@@ -336,19 +335,13 @@ public class XboxRestAPI
             return SpoofResult.Fail("Missing Title ID.");
         }
 
-        if (string.IsNullOrWhiteSpace(_xauth))
-        {
-            return SpoofResult.Fail("Missing XAUTH token. Log in again.");
-        }
-
         if (!ulong.TryParse(spoofedTitleId, out var titleId))
         {
             return SpoofResult.Fail("Title ID must be numeric.");
         }
 
         SetHeartbeatHeaders();
-        var requestBody =
-            $"{{\"titles\":[{{\"expiration\":600,\"id\":{titleId},\"state\":\"active\",\"sandbox\":\"RETAIL\"}}]}}";
+        var requestBody = $"{{\"titles\":[{{\"expiration\":600,\"id\":{titleId},\"state\":\"active\",\"sandbox\":\"RETAIL\"}}]}}";
         return await PostSpoofAsync(InterpolatedXboxAPIUrls.HeartbeatMeUrl, requestBody, "Heartbeat (me)");
     }
 
@@ -366,7 +359,7 @@ public class XboxRestAPI
         }
 
         SetPresenceHeaders();
-        var presenceRequest = new PresenceTitleRequest()
+        var presenceRequest = new PresenceTitleRequest
         {
             id = titleId
         };
@@ -391,7 +384,7 @@ public class XboxRestAPI
         }
 
         SetPresenceHeaders();
-        var presenceRequest = new PresenceTitleRequest()
+        var presenceRequest = new PresenceTitleRequest
         {
             id = titleId
         };
@@ -404,7 +397,7 @@ public class XboxRestAPI
 
     public async Task<SpoofResult> SendSpoofAsync(string xuid, string spoofedTitleId)
     {
-        if (string.IsNullOrWhiteSpace(_xauth))
+        if (string.IsNullOrWhiteSpace(CurrentXauth))
         {
             return SpoofResult.Fail("Missing XAUTH token. Log in again.");
         }
@@ -464,48 +457,41 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(xuid) || string.IsNullOrWhiteSpace(titleId))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
+
         SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion4);
+        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Achievements);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-
-        var httpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.QueryAchievementsUrl, xuid, titleId));
-        var response = await httpResponse.Content.ReadAsStringAsync();
-        var achievements = JsonConvert.DeserializeObject<AchievementsResponse>(response);
-        return achievements;
+        var responseString = await _httpClient.GetStringAsync(string.Format(InterpolatedXboxAPIUrls.QueryAchievementsUrl, xuid, titleId));
+        return JsonConvert.DeserializeObject<AchievementsResponse>(responseString);
     }
 
     public async Task<Xbox360AchievementResponse?> GetAchievementsFor360TitleAsync(string xuid, string titleId)
     {
         if (string.IsNullOrWhiteSpace(xuid) || string.IsNullOrWhiteSpace(titleId))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
+
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion3);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Achievements);
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var httpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.QueryAchievements360Url, xuid, titleId));
-        var response = await httpResponse.Content.ReadAsStringAsync();
-        var achievements = JsonConvert.DeserializeObject<Xbox360AchievementResponse>(response);
-        return achievements;
+        var responseString = await _httpClient.GetStringAsync(string.Format(InterpolatedXboxAPIUrls.QueryAchievements360Url, xuid, titleId));
+        return JsonConvert.DeserializeObject<Xbox360AchievementResponse>(responseString);
     }
 
     public async Task UnlockTitleBasedAchievementAsync(string serviceConfigId, string titleId, string xuid, string achievementId, bool useFakeSignature = false)
     {
-        // only unlock the specified achievement
-        await UnlockTitleBasedAchievementsAsync(serviceConfigId, titleId, xuid, new List<string>() { achievementId }, useFakeSignature);
+        await UnlockTitleBasedAchievementsAsync(serviceConfigId, titleId, xuid, new List<string> { achievementId }, useFakeSignature);
     }
 
     public async Task UnlockTitleBasedAchievementsAsync(string serviceConfigId, string titleId, string xuid, List<string> achievementIds, bool useFakeSignature = false)
     {
         if (string.IsNullOrWhiteSpace(serviceConfigId) || string.IsNullOrWhiteSpace(titleId) || string.IsNullOrWhiteSpace(xuid) || achievementIds.Count == 0)
         {
-            // Don't send a request if we don't have the details
             return;
         }
 
@@ -520,8 +506,6 @@ public class XboxRestAPI
             _httpClient.DefaultRequestHeaders.Add(HeaderNames.Signature, HeaderValues.Signature);
         }
 
-        // Split the requests into 50 achievements each. Anything over 100 seems to BadRequest. TODO: look into
-        // headers and see if we can send long data or w/e
         const int chunkSize = 50;
         for (int i = 0; i < achievementIds.Count; i += chunkSize)
         {
@@ -547,12 +531,10 @@ public class XboxRestAPI
         }
     }
 
-    // TODO: see if we can handle the actual request body building
     public async Task UnlockEventBasedAchievement(string eventsToken, StringContent requestBody)
     {
         if (string.IsNullOrWhiteSpace(eventsToken))
         {
-            // Don't send a request if we don't have the details
             return;
         }
 
@@ -560,13 +542,11 @@ public class XboxRestAPI
         _eventBasedClient.DefaultRequestHeaders.Add("tickets", $"\"1\"=\"{eventsToken}\"");
         var response = await _eventBasedClient.PostAsync(BasicXboxAPIUris.TelemetryUrl, requestBody);
         var responseBody = await response.Content.ReadAsStringAsync();
-        HomeViewModel.EventsLog($"POST {BasicXboxAPIUris.TelemetryUrl} => {(int)response.StatusCode} {response.StatusCode}");
-        HomeViewModel.EventsLog($"Response: {responseBody}");
+        _logger.LogInformation("POST {TelemetryUrl} => {StatusCode}", BasicXboxAPIUris.TelemetryUrl, response.StatusCode);
+
         if (!response.IsSuccessStatusCode)
         {
-            HomeViewModel.EventsLog("Response headers:");
-            foreach (var header in response.Headers)
-                HomeViewModel.EventsLog($"  {header.Key}: {string.Join(", ", header.Value)}");
+            _logger.LogWarning("Event unlock failed: {Body}", responseBody);
         }
     }
 
@@ -574,18 +554,17 @@ public class XboxRestAPI
     {
         if (string.IsNullOrWhiteSpace(prodId))
         {
-            // Don't send a request if we don't have the details
             return null;
         }
 
         SetDefaultHeaders();
-        GamepassProductsRequest gamepassProducts = new GamepassProductsRequest()
+        var gamepassProducts = new GamepassProductsRequest
         {
-            Products = new List<string>() { prodId }
+            Products = new List<string> { prodId }
         };
         var titleIDsHttpResponse = await _httpClient.PostAsync(
-                    BasicXboxAPIUris.GamepassCatalogUrl,
-                    new StringContent(JsonConvert.SerializeObject(gamepassProducts)));
+            BasicXboxAPIUris.GamepassCatalogUrl,
+            new StringContent(JsonConvert.SerializeObject(gamepassProducts)));
         var titleIDsResponse = await titleIDsHttpResponse.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<GamePassProducts>(titleIDsResponse);
     }

@@ -112,7 +112,7 @@ namespace XAU.Views.Pages
 
         private void GrabEventsToken_OnClick(object sender, RoutedEventArgs e)
         {
-            if (!HomeViewModel._isLoggedIn)
+            if (!HomeViewModel.IsUserLoggedIn)
             {
                 _snackbarService.Show(
                     "Not Logged In",
@@ -169,7 +169,7 @@ namespace XAU.Views.Pages
             var obtained = HomeViewModel.EventsTokenObtainedAtUtc;
             var expires = HomeViewModel.EventsTokenExpiresAtUtc;
 
-            if (obtained == DateTime.MinValue || string.IsNullOrEmpty(AchievementsViewModel.EventsToken))
+            if (!obtained.HasValue || obtained.Value == DateTime.MinValue || string.IsNullOrEmpty(AchievementsViewModel.EventsToken))
             {
                 EventsTokenCreated.Text = "N/A";
                 EventsTokenCreated.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray);
@@ -178,7 +178,7 @@ namespace XAU.Views.Pages
                 return;
             }
 
-            EventsTokenCreated.Text = obtained.ToLocalTime().ToString("g");
+            EventsTokenCreated.Text = obtained.Value.ToLocalTime().ToString("g");
             EventsTokenCreated.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.White);
 
             if (expires.HasValue)

@@ -3,10 +3,11 @@ using System.ComponentModel;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
+using XAU.Services;
 using XAU.Views.Pages;
 namespace XAU.ViewModels.Pages
 {
-    public partial class GamesViewModel(ISnackbarService snackbarService, INavigationService navigationService) : ObservableObject, INavigationAware, INotifyPropertyChanged
+    public partial class GamesViewModel : ObservableObject, INavigationAware, INotifyPropertyChanged
     {
         [ObservableProperty] private string _xuidOverride = "0";
         [ObservableProperty] private ObservableCollection<Game> _games = new ObservableCollection<Game>();
@@ -23,9 +24,8 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private int _currentPage = 0;
         [ObservableProperty] private bool _isInitialized = false;
 
-        TitlesList GamesResponse = new TitlesList();
+        private TitlesList GamesResponse = new TitlesList();
         public bool PageReset = true;
-
 
         public class Game
         {
@@ -35,18 +35,29 @@ namespace XAU.ViewModels.Pages
             public required string CurrentAchievements { get; set; }
             public required string Progress { get; set; }
             public required string Index { get; set; }
-
         }
 
-        private XboxRestAPI GetXboxRestAPI() => new XboxRestAPI(HomeViewModel.XAUTH);
+        private readonly ISessionService _sessionService;
+        private readonly XboxRestAPI _xboxRestAPI;
+        private readonly ISnackbarService _snackbarService;
+        private readonly INavigationService _navigationService;
+        private readonly TimeSpan _snackbarDuration = TimeSpan.FromSeconds(2);
 
-        private readonly IContentDialogService _contentDialogService;
-        private readonly ISnackbarService _snackbarService = snackbarService;
-        private TimeSpan _snackbarDuration = TimeSpan.FromSeconds(2);
+        public GamesViewModel(
+            ISessionService sessionService,
+            XboxRestAPI xboxRestAPI,
+            ISnackbarService snackbarService,
+            INavigationService navigationService)
+        {
+            _sessionService = sessionService;
+            _xboxRestAPI = xboxRestAPI;
+            _snackbarService = snackbarService;
+            _navigationService = navigationService;
+        }
 
         public async void OnNavigatedTo()
         {
-            if (!IsInitialized && HomeViewModel.InitComplete)
+            if (!IsInitialized && _sessionService.InitComplete)
                 await InitializeViewModel();
         }
 
@@ -56,11 +67,10 @@ namespace XAU.ViewModels.Pages
 
         private async Task InitializeViewModel()
         {
-            XuidOverride = HomeViewModel.XUIDOnly;
+            XuidOverride = _sessionService.Xuid;
 
             IsInitialized = true;
             await GetGamesList();
-
         }
 
         [RelayCommand]
@@ -81,7 +91,7 @@ namespace XAU.ViewModels.Pages
             Games.Clear();
             GamesPaged.Clear();
             LoadingStart();
-            GamesResponse = await GetXboxRestAPI().GetGamesListAsync(XuidOverride) ?? new TitlesList();
+            GamesResponse = await _xboxRestAPI.GetGamesListAsync(XuidOverride) ?? new TitlesList();
             LoadGame();
         }
 
@@ -101,7 +111,7 @@ namespace XAU.ViewModels.Pages
             AchievementsViewModel.TitleID = GamesResponse.Titles[int.Parse(index)].TitleId;
             AchievementsViewModel.IsSelectedGame360 = GamesResponse.Titles[int.Parse(index)].Devices.Contains("Xbox360") || GamesResponse.Titles[int.Parse(index)].Devices.Contains("Mobile");
             AchievementsViewModel.NewGame = true;
-            navigationService.Navigate(typeof(AchievementsPage));
+            _navigationService.Navigate(typeof(AchievementsPage));
             await Task.CompletedTask;
         }
         [RelayCommand]

@@ -10,6 +10,7 @@ using Wpf.Ui.Controls;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Services;
+using XAU.Services;
 using XAU.Views.Pages;
 
 namespace XAU.ViewModels.Pages
@@ -35,26 +36,45 @@ namespace XAU.ViewModels.Pages
         private Dictionary<int, DGAchievement> _unlockedAchievements = new Dictionary<int, DGAchievement>();
 
         private GameTitle GameInfoResponse = new GameTitle();
-        // TODO: this needs to be updated if language changes
-        private XboxRestAPI GetXboxRestAPI() => new XboxRestAPI(XboxRestAPI.GetSpoofAuth());
-
         public static bool SpoofingUpdate = false;
         private bool IsFiltered = false;
         private bool IsEventBased = false;
         private dynamic EventsData = (dynamic)(new JObject());
-        public static string EventsToken;
 
-        public AchievementsViewModel(ISnackbarService snackbarService, IContentDialogService contentDialogService, INavigationService navigationService)
+        private static AchievementsViewModel? s_instance;
+        public static string? EventsToken
         {
-            _snackbarService = snackbarService;
-            _contentDialogService = contentDialogService;
-            _navigationService = navigationService;
+            get => s_instance?._sessionService.EventsToken;
+            set { if (s_instance != null) s_instance._sessionService.EventsToken = value; }
         }
 
+        private readonly ISessionService _sessionService;
+        private readonly ISettingsService _settingsService;
+        private readonly IEventsTokenService _eventsTokenService;
+        private readonly XboxRestAPI _xboxRestAPI;
         private readonly IContentDialogService _contentDialogService;
         private readonly ISnackbarService _snackbarService;
         private readonly INavigationService _navigationService;
         private TimeSpan _snackbarDuration = TimeSpan.FromSeconds(2);
+
+        public AchievementsViewModel(
+            ISessionService sessionService,
+            ISettingsService settingsService,
+            IEventsTokenService eventsTokenService,
+            XboxRestAPI xboxRestAPI,
+            ISnackbarService snackbarService,
+            IContentDialogService contentDialogService,
+            INavigationService navigationService)
+        {
+            _sessionService = sessionService;
+            _settingsService = settingsService;
+            _eventsTokenService = eventsTokenService;
+            _xboxRestAPI = xboxRestAPI;
+            _snackbarService = snackbarService;
+            _contentDialogService = contentDialogService;
+            _navigationService = navigationService;
+            s_instance = this;
+        }
 
         public class DGAchievement
         {
@@ -144,7 +164,7 @@ namespace XAU.ViewModels.Pages
             GameInfo = string.Empty;
 
             // Fetch game information
-            var gameInfoResponse = await GetXboxRestAPI().GetGameTitleAsync(HomeViewModel.XUIDOnly, TitleIDOverride);
+            var gameInfoResponse = await _xboxRestAPI.GetGameTitleAsync(_sessionService.Xuid, TitleIDOverride);
             GameInfoResponse = gameInfoResponse ?? new GameTitle();
 
             // Handle response validation and set properties accordingly
@@ -213,7 +233,7 @@ namespace XAU.ViewModels.Pages
         {
             await HomeViewModel.TryRefreshSpoofTokenFromXboxAppAsync();
 
-            var spoofResult = await GetXboxRestAPI().SendSpoofAsync(HomeViewModel.XUIDOnly, HomeViewModel.AutoSpoofedTitleID);
+            var spoofResult = await _xboxRestAPI.SendSpoofAsync(_sessionService.Xuid, _sessionService.AutoSpoofedTitleId);
             if (!spoofResult.Success)
             {
                 SpoofingUpdate = true;
@@ -227,7 +247,7 @@ namespace XAU.ViewModels.Pages
             {
                 if (i == 300)
                 {
-                    var refreshResult = await GetXboxRestAPI().SendSpoofAsync(HomeViewModel.XUIDOnly, HomeViewModel.AutoSpoofedTitleID);
+                    var refreshResult = await _xboxRestAPI.SendSpoofAsync(_sessionService.Xuid, _sessionService.AutoSpoofedTitleId);
                     if (!refreshResult.Success)
                     {
                         SpoofingUpdate = true;
@@ -260,7 +280,7 @@ namespace XAU.ViewModels.Pages
             if (!IsSelectedGame360)
             {
                 Unlockable = true;
-                AchievementResponse = await GetXboxRestAPI().GetAchievementsForTitleAsync(HomeViewModel.XUIDOnly, TitleIDOverride);
+                AchievementResponse = await _xboxRestAPI.GetAchievementsForTitleAsync(_sessionService.Xuid, TitleIDOverride);
                 try
                 {
                     if (AchievementResponse.achievements[0].progression.requirements.Any())
@@ -402,7 +422,7 @@ namespace XAU.ViewModels.Pages
             else
             {
                 Unlockable = false;
-                Xbox360AchievementResponse = await GetXboxRestAPI().GetAchievementsFor360TitleAsync(HomeViewModel.XUIDOnly, TitleIDOverride);
+                Xbox360AchievementResponse = await _xboxRestAPI.GetAchievementsFor360TitleAsync(_sessionService.Xuid, TitleIDOverride);
                 if (Xbox360AchievementResponse?.achievements.Count == 0)
                 {
                     IsSelectedGame360 = false;
@@ -515,7 +535,7 @@ namespace XAU.ViewModels.Pages
             {
                 try
                 {
-                    await GetXboxRestAPI().UnlockTitleBasedAchievementAsync(AchievementResponse.achievements[0].serviceConfigId, AchievementResponse.achievements[0].titleAssociations[0].id, HomeViewModel.XUIDOnly, DGAchievements[AchievementIndex].ID.ToString(), HomeViewModel.Settings.FakeSignatureEnabled);
+                    await _xboxRestAPI.UnlockTitleBasedAchievementAsync(AchievementResponse.achievements[0].serviceConfigId, AchievementResponse.achievements[0].titleAssociations[0].id, _sessionService.Xuid, DGAchievements[AchievementIndex].ID.ToString(), _settingsService.Current.FakeSignatureEnabled);
 
                     _snackbarService.Show("Achievement Unlocked", $"{DGAchievements[AchievementIndex].Name} has been unlocked",
                         ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
@@ -619,7 +639,7 @@ namespace XAU.ViewModels.Pages
                 var bodyconverted = new StringContent(requestbody, Encoding.UTF8, "application/x-json-stream");
                 try
                 {
-                    await GetXboxRestAPI().UnlockEventBasedAchievement(EventsToken, bodyconverted);
+                    await _xboxRestAPI.UnlockEventBasedAchievement(_sessionService.EventsToken ?? "", bodyconverted);
 
                     _snackbarService.Show("Achievement Unlocked", $"{DGAchievements[AchievementIndex].Name} has been unlocked",
                         ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
@@ -645,8 +665,8 @@ namespace XAU.ViewModels.Pages
             var lockedAchievementIds = Achievements.Where(o => o.progressState != StringConstants.Achieved).Select(o => o.id).ToList();
             try
             {
-                await GetXboxRestAPI().UnlockTitleBasedAchievementsAsync(serviceConfigId: AchievementResponse.achievements[0].serviceConfigId,
-                    titleId: AchievementResponse.achievements[0].titleAssociations[0].id, xuid: HomeViewModel.XUIDOnly, achievementIds: lockedAchievementIds, useFakeSignature: HomeViewModel.Settings.FakeSignatureEnabled);
+                await _xboxRestAPI.UnlockTitleBasedAchievementsAsync(serviceConfigId: AchievementResponse.achievements[0].serviceConfigId,
+                    titleId: AchievementResponse.achievements[0].titleAssociations[0].id, xuid: _sessionService.Xuid, achievementIds: lockedAchievementIds, useFakeSignature: _settingsService.Current.FakeSignatureEnabled);
 
                 _snackbarService.Show("All Achievements Unlocked", $"All Achievements for this game have been unlocked",
                     ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);

@@ -1,23 +1,30 @@
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Newtonsoft.Json;
 using Wpf.Ui.Controls;
+using XAU.Services;
 using XAU.Services.HttpServer;
 
 namespace XAU.ViewModels.Pages
 {
     public partial class SettingsViewModel : ObservableObject, INavigationAware, IDisposable
     {
-        private bool _isInitialized = false;
+        private readonly ISessionService _sessionService;
+        private readonly ISettingsService _settingsService;
+        private readonly XboxRestAPI _xboxRestAPI;
 
-        [ObservableProperty]
-        private string _appVersion = String.Empty;
+        private bool _isInitialized;
+        private HttpServer? _httpServer;
+        private bool _disposed;
 
-        static string ProgramFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "XAU");
-        string SettingsFilePath = Path.Combine(ProgramFolderPath, "settings.json");
-        //settings
-        [ObservableProperty] private string _settingsVersion;
-        [ObservableProperty] private string _toolVersion;
+        [ObservableProperty] private string _appVersion = string.Empty;
+
+        // Settings Properties
+        [ObservableProperty] private string? _settingsVersion;
+        [ObservableProperty] private string? _toolVersion;
         [ObservableProperty] private bool _unlockAllEnabled;
         [ObservableProperty] private bool _autoSpooferEnabled;
         [ObservableProperty] private bool _autoLaunchXboxAppEnabled;
@@ -28,17 +35,74 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private bool _privacyMode;
         [ObservableProperty] private bool _oAuthLogin;
         [ObservableProperty] private bool _autoGrabEventsToken;
-        [ObservableProperty] private string _xauth;
+        [ObservableProperty] private string _xauth = string.Empty;
 
         [ObservableProperty] private bool _serverEnabled;
         [ObservableProperty] private string _serverPort = "1337";
         [ObservableProperty] private string _listeningAddress = "http://localhost:1337";
 
-        private HttpServer? _httpServer;
-        private bool _disposed;
-
         public static bool ManualXauth = false;
-        public RoutedEventHandler OnNavigatedToEvent = null!;
+        public event RoutedEventHandler? OnNavigatedToEvent;
+
+        public SettingsViewModel(
+            ISessionService sessionService,
+            ISettingsService settingsService,
+            XboxRestAPI xboxRestAPI)
+        {
+            _sessionService = sessionService;
+            _settingsService = settingsService;
+            _xboxRestAPI = xboxRestAPI;
+        }
+
+        public void OnNavigatedTo()
+        {
+            if (!_isInitialized)
+                InitializeViewModel();
+
+            LoadSettings();
+            OnNavigatedToEvent?.Invoke(this, new RoutedEventArgs());
+        }
+
+        public void OnNavigatedFrom()
+        {
+        }
+
+        private void InitializeViewModel()
+        {
+            AppVersion = $"XAU - {GetAssemblyVersion()}";
+            ToolVersion = $"XAU - {GetAssemblyVersion()}";
+            SettingsVersion = "2";
+            _isInitialized = true;
+
+            if (_httpServer == null)
+            {
+                var routes = Routes.GetRoutes(
+                    getXauthToken: () => _sessionService.XAuthToken,
+                    getXboxRestAPI: () => _xboxRestAPI,
+                    getXUIDOnly: () => _sessionService.Xuid
+                );
+                _httpServer = new HttpServer(ServerPort, routes);
+            }
+            ListeningAddress = $"http://localhost:{ServerPort}";
+        }
+
+        public void LoadSettings()
+        {
+            var settings = _settingsService.Current;
+            SettingsVersion = settings.SettingsVersion;
+            ToolVersion = settings.ToolVersion;
+            UnlockAllEnabled = settings.UnlockAllEnabled;
+            AutoSpooferEnabled = settings.AutoSpooferEnabled;
+            AutoLaunchXboxAppEnabled = settings.AutoLaunchXboxAppEnabled;
+            LaunchHidden = settings.LaunchHidden;
+            FakeSignatureEnabled = settings.FakeSignatureEnabled;
+            RegionOverride = settings.RegionOverride;
+            UseAcrylic = settings.UseAcrylic;
+            PrivacyMode = settings.PrivacyMode;
+            Xauth = _sessionService.XAuthToken;
+            OAuthLogin = settings.OAuthLogin;
+            AutoGrabEventsToken = settings.AutoGrabEventsToken;
+        }
 
         [RelayCommand]
         public void SaveSettings()
@@ -56,11 +120,14 @@ namespace XAU.ViewModels.Pages
                 UseAcrylic = UseAcrylic,
                 PrivacyMode = PrivacyMode,
                 OAuthLogin = OAuthLogin,
-                AutoGrabEventsToken = AutoGrabEventsToken
+                AutoGrabEventsToken = AutoGrabEventsToken,
+                CachedEventsToken = _sessionService.EventsToken,
+                EventsTokenObtainedAt = _sessionService.EventsTokenObtainedAt,
+                EventsUserHash = _sessionService.EventsUserHash
             };
-            string settingsJson = JsonConvert.SerializeObject(settings);
-            File.WriteAllText(SettingsFilePath, settingsJson);
-            HomeViewModel.Settings = settings; // update ref
+
+            _settingsService.SaveSettings(settings);
+            HomeViewModel.Settings = settings;
         }
 
         [RelayCommand]
@@ -69,10 +136,11 @@ namespace XAU.ViewModels.Pages
             if (_httpServer == null)
             {
                 var routes = Routes.GetRoutes(
-                    getXauthToken: () => HomeViewModel.XAUTH,
-                    getXboxRestAPI: () => new XboxRestAPI(HomeViewModel.XAUTH),
-                    getXUIDOnly: () => HomeViewModel.XUIDOnly
-                ); _httpServer = new HttpServer(ServerPort, routes);
+                    getXauthToken: () => _sessionService.XAuthToken,
+                    getXboxRestAPI: () => _xboxRestAPI,
+                    getXUIDOnly: () => _sessionService.Xuid
+                );
+                _httpServer = new HttpServer(ServerPort, routes);
             }
 
             if (ServerEnabled)
@@ -85,8 +153,6 @@ namespace XAU.ViewModels.Pages
                 _httpServer.Stop();
                 ListeningAddress = $"http://localhost:{ServerPort}";
             }
-            // TO DO: SAVE SERVER ENABLED/DISABLED STATUS & PORT NUMBER
-            //SaveSettings();
         }
 
         [RelayCommand]
@@ -97,93 +163,31 @@ namespace XAU.ViewModels.Pages
                 _httpServer.UpdatePort(ServerPort);
                 UpdateListeningAddress();
             }
-
-            // TO DO: SAVE SERVER ENABLED/DISABLED STATUS & PORT NUMBER
-            //SaveSettings();
         }
 
         [RelayCommand]
-        public void RestartAsAdmin()
+        public void OpenSettingsFile()
         {
-            if (_httpServer != null)
+            Process.Start(new ProcessStartInfo
             {
-                _httpServer.RestartAsAdmin();
-            }
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{_settingsService.SettingsFilePath}\""
+            });
         }
 
         [RelayCommand]
-        private void OpenListeningAddress()
+        public void OpenSettingsFolder()
         {
-            try
+            Process.Start(new ProcessStartInfo
             {
-                if (!string.IsNullOrWhiteSpace(ListeningAddress))
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = ListeningAddress,
-                        UseShellExecute = true
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to open address: {ex.Message}");
-            }
-        }
-
-        public void OnNavigatedTo()
-        {
-            if (!_isInitialized)
-            {
-                InitializeViewModel();
-            }
-
-            OnNavigatedToEvent.Invoke(this, new RoutedEventArgs());
-        }
-
-        public void OnNavigatedFrom()
-        { }
-
-        private void InitializeViewModel()
-        {
-            LoadSettings();
-            ToolVersion = $"XAU - {GetAssemblyVersion()}";
-            SettingsVersion = "2";
-            _isInitialized = true;
-
-            if (_httpServer == null)
-            {
-                var routes = Routes.GetRoutes(
-                    getXauthToken: () => HomeViewModel.XAUTH,
-                    getXboxRestAPI: () => new XboxRestAPI(HomeViewModel.XAUTH),
-                    getXUIDOnly: () => HomeViewModel.XUIDOnly
-                );
-                _httpServer = new HttpServer(ServerPort, routes);
-            }
-            ListeningAddress = $"http://localhost:{ServerPort}";
-        }
-
-        public void LoadSettings()
-        {
-            SettingsVersion = HomeViewModel.Settings.SettingsVersion;
-            ToolVersion = HomeViewModel.Settings.ToolVersion;
-            UnlockAllEnabled = HomeViewModel.Settings.UnlockAllEnabled;
-            AutoSpooferEnabled = HomeViewModel.Settings.AutoSpooferEnabled;
-            AutoLaunchXboxAppEnabled = HomeViewModel.Settings.AutoLaunchXboxAppEnabled;
-            LaunchHidden = HomeViewModel.Settings.LaunchHidden;
-            FakeSignatureEnabled = HomeViewModel.Settings.FakeSignatureEnabled;
-            RegionOverride = HomeViewModel.Settings.RegionOverride;
-            UseAcrylic = HomeViewModel.Settings.UseAcrylic;
-            PrivacyMode = HomeViewModel.Settings.PrivacyMode;
-            Xauth = HomeViewModel.XAUTH;
-            OAuthLogin = HomeViewModel.Settings.OAuthLogin;
-            AutoGrabEventsToken = HomeViewModel.Settings.AutoGrabEventsToken;
+                FileName = "explorer.exe",
+                Arguments = $"\"{Path.GetDirectoryName(_settingsService.SettingsFilePath)}\""
+            });
         }
 
         private string GetAssemblyVersion()
         {
-            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString()
-                ?? String.Empty;
+            return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
         }
 
         private void UpdateListeningAddress()
@@ -193,6 +197,7 @@ namespace XAU.ViewModels.Pages
                 ListeningAddress = _httpServer.GetListeningAddress();
             }
         }
+
         partial void OnServerPortChanged(string value)
         {
             if (_httpServer != null)
@@ -200,9 +205,8 @@ namespace XAU.ViewModels.Pages
                 _httpServer.UpdatePort(value);
                 UpdateListeningAddress();
             }
-            // TO DO: SAVE SERVER ENABLED/DISABLED STATUS & PORT NUMBER
-            //SaveSettings();
         }
+
         public void Dispose()
         {
             if (_disposed) return;

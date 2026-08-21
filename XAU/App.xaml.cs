@@ -17,6 +17,15 @@ public partial class App
         .ConfigureServices((_, services) =>
         {
             services.AddHostedService<ApplicationHostService>();
+            services.AddHttpClient();
+
+            // Core Services
+            services.AddSingleton<ISessionService, SessionService>();
+            services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<IEventsTokenService, EventsTokenService>();
+            services.AddSingleton<IXboxMemoryScanner, XboxMemoryScanner>();
+            services.AddSingleton<IOAuthService, OAuthService>();
+            services.AddSingleton<XboxRestAPI>();
 
             services.AddSingleton<MainWindow>();
             services.AddSingleton<MainWindowViewModel>();
