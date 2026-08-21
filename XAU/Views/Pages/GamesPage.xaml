@@ -14,7 +14,7 @@
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       mc:Ignorable="d">
 
-    <Grid Margin="16,10,16,16" Background="Transparent" PreviewMouseWheel="GamesPage_OnPreviewMouseWheel">
+    <Grid Margin="16,10,16,16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="{Binding ViewModel.GamesListHeight}"/>
@@ -123,18 +123,11 @@
                          Width="{Binding ViewModel.LoadingSize}" />
 
         <!-- 2. Interactive Game Posters Grid -->
-        <ScrollViewer Grid.Row="1" x:Name="GamesScrollViewer"
-                      VerticalScrollBarVisibility="Auto" 
-                      HorizontalScrollBarVisibility="Disabled"
-                      CanContentScroll="False"
-                      Background="Transparent"
-                      PreviewMouseWheel="GamesScrollViewer_PreviewMouseWheel">
-            <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}"
-                          ScrollViewer.CanContentScroll="False"
-                          Background="Transparent">
+        <Grid Grid.Row="1" Margin="0,4,0,0">
+            <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" Background="Transparent"/>
+                        <WrapPanel Orientation="Horizontal"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
@@ -187,6 +180,6 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </ScrollViewer>
+        </Grid>
     </Grid>
 </Page>
