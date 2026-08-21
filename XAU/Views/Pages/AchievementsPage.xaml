@@ -1,247 +1,228 @@
 <Page x:Class="XAU.Views.Pages.AchievementsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:p="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:local="clr-namespace:XAU.Views.Pages"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="AchievementsPage"
-      x:Name="AchievementsPagen"
-      d:DataContext="{d:DesignInstance local:AchievementsPage,
-                                 IsDesignTimeCreatable=False}"
-      d:DesignHeight="450"
-      d:DesignWidth="800"
+      d:DataContext="{d:DesignInstance local:AchievementsPage, IsDesignTimeCreatable=False}"
+      d:DesignHeight="700"
+      d:DesignWidth="1100"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       mc:Ignorable="d">
 
-
-    <Grid
-          Height="{Binding ElementName=AchievementsPagen, Path=ActualHeight}"
-          Width="{Binding ElementName=AchievementsPagen, Path=ActualWidth}">
+    <Grid Margin="16,10,16,16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="1.5*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <ui:TextBox
-                Grid.Row="1"
-                Grid.Column="0"
-                x:Name="TitleIDBox"
-                IsEnabled="{Binding ViewModel.TitleIDEnabled}"
-                Padding="10,4,8,7"
-                Margin="0,0,44,0"
-                Text="{Binding ViewModel.TitleIDOverride, Mode=TwoWay}"
-                TextAlignment="Center"
-                ClearButtonEnabled="False" 
-            ></ui:TextBox>
-            <ui:Button
-                Grid.Row="1"
-                Grid.Column="0"
-                x:Name="TitleIDRefreshButton"
-                IsEnabled="{Binding ViewModel.TitleIDEnabled}"
-                Padding="10,5,8,5"
-                Margin="10,0,5,0"
-                Content=""
-                HorizontalAlignment="Right"
-                Icon="{ui:SymbolIcon ArrowRepeatAll24}"
-                Command="{Binding ViewModel.RefreshAchievementsCommand}"/>
-            <Label 
-                Grid.Row="0" 
-                Grid.Column="0"
-                Margin="0,0,54,0"
-                Content="TitleID Override"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"/>
 
-            <ui:TextBox
-                Grid.Row="1"
-                Grid.Column="1"
-                x:Name="SearchBox"
-                IsEnabled="{Binding ViewModel.TitleIDEnabled}"
-                Padding="10,4,8,7"
-                Margin="10,0,44,0"
-                Text="{Binding ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                PlaceholderText="Search achievements"
-                TextAlignment="Center"
-                ClearButtonEnabled="True" 
-                KeyDown="SearchBox_OnKeyDownAsync"
-            ></ui:TextBox>
-            <ui:Button
-                Grid.Row="1"
-                Grid.Column="1"
-                x:Name="SearchButton"
-                IsEnabled="{Binding ViewModel.TitleIDEnabled}"
-                Padding="10,5,8,5"
-                Margin="10,0,5,0"
-                Content=""
-                HorizontalAlignment="Right"
-                Icon="{ui:SymbolIcon Search24}"
-                Command="{Binding ViewModel.SearchAndFilterAchievementsCommand}"/>
-            <Label 
-                Grid.Row="0" 
-                Grid.Column="1"
-                Margin="10,0,44,0"
-                Content="Search"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"/>
+        <!-- 1. Top Modernized Toolbar -->
+        <Border Grid.Row="0" Margin="0,0,0,10" Padding="12,10" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <ComboBox
-                Grid.Row="1"
-                Grid.Column="2"
-                x:Name="FilterBox"
-                IsEnabled="{Binding ViewModel.TitleIDEnabled}"
-                Padding="10,4,8,7"
-                Margin="10,0,10,0"
-                ItemsSource="{Binding ViewModel.FilterOptions}"
-                SelectedIndex="{Binding ViewModel.FilterIndex, Mode=TwoWay}"
-            />
-            <Label 
-                Grid.Row="0" 
-                Grid.Column="2"
-                Margin="10,0,10,0"
-                Target="{Binding ElementName=FilterBox}"
-                Content="Status"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"/>
-
-            <ComboBox
-                Grid.Row="1"
-                Grid.Column="3"
-                x:Name="SortBox"
-                IsEnabled="{Binding ViewModel.TitleIDEnabled}"
-                Padding="10,4,8,7"
-                Margin="10,0,10,0"
-                ItemsSource="{Binding ViewModel.SortOptions}"
-                SelectedIndex="{Binding ViewModel.SortIndex, Mode=TwoWay}"
-            />
-            <Label 
-                Grid.Row="0" 
-                Grid.Column="3"
-                Margin="10,0,10,0"
-                Target="{Binding ElementName=SortBox}"
-                Content="Sort By"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"/>
-
-            <Label 
-                Grid.Row="0" 
-                Grid.Column="4"
-                Margin="10,0,10,0"
-                Content="{Binding ViewModel.GameInfo}"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"/>
-            <TextBlock
-                Grid.Row="1"
-                Grid.Column="4"
-                Margin="10,0,10,0"
-                Text="{Binding ViewModel.GameName}"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center"
-                TextWrapping="Wrap"
-                TextAlignment="Center"
-                />
-
-            <ui:Button
-                Grid.Row="0"
-                Grid.Column="5"
-                x:Name="UnlockAllButton"
-                IsEnabled="{Binding ViewModel.IsUnlockAllEnabled}"
-                Padding="10,5,8,5"
-                Margin="10,0,5,2"
-                Content="Unlock All"
-                HorizontalAlignment="Right"
-                Command="{Binding ViewModel.UnlockAllCommand}"
-            />
-            <ui:Button
-                Grid.Row="1"
-                Grid.Column="5"
-                x:Name="RefreshButton"
-                Padding="10,5,8,5"
-                Margin="10,2,5,0"
-                Content="Refresh"
-                HorizontalAlignment="Stretch"
-                Command="{Binding ViewModel.RefreshAchievementsCommand}"
-            />
-        </Grid>
-        <Grid Grid.Row="1" Margin="0,8,0,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!-- Batch Control Bar -->
-            <Border Grid.Row="0" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
-                <Grid>
+                <!-- TitleID Override -->
+                <Grid Grid.Column="0" Margin="0,0,10,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
-                    <ui:Button Grid.Column="0" Content="Select Locked" Margin="0,0,6,0" Padding="8,4" Command="{Binding ViewModel.SelectAllLockedCommand}" Icon="{ui:SymbolIcon CheckmarkCircle24}"/>
-                    <ui:Button Grid.Column="1" Content="Clear Selection" Margin="0,0,12,0" Padding="8,4" Command="{Binding ViewModel.DeselectAllCommand}"/>
-
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                        <Label Content="Safety Delay:" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <ComboBox ItemsSource="{Binding ViewModel.DelayPresetOptions}" SelectedIndex="{Binding ViewModel.DelayPresetIndex, Mode=TwoWay}" Width="150" Padding="8,3"/>
-                    </StackPanel>
-
-                    <CheckBox Grid.Column="3" Content="Auto-Spoof" IsChecked="{Binding ViewModel.AutoSpoofDuringBatch, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <CheckBox Grid.Column="4" Content="Reveal Secrets" IsChecked="{Binding ViewModel.RevealSecretDetails, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-
-                    <StackPanel Grid.Column="5" Orientation="Vertical" VerticalAlignment="Center" Margin="6,0,12,0" Visibility="{Binding ViewModel.BatchRunningVisibility}">
-                        <TextBlock Text="{Binding ViewModel.BatchStatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                        <ProgressBar Value="{Binding ViewModel.BatchProgress}" Height="6" Margin="0,3,0,0"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <ui:Button Content="Batch Unlock" Appearance="Primary" Padding="12,5"
-                                   Command="{Binding ViewModel.StartBatchUnlockCommand}"
-                                   Visibility="{Binding ViewModel.BatchNotRunningVisibility}"
-                                   Icon="{ui:SymbolIcon Play24}"/>
-                        <ui:Button Content="Cancel Batch" Appearance="Danger" Padding="12,5"
-                                   Command="{Binding ViewModel.CancelBatchUnlockCommand}"
-                                   Visibility="{Binding ViewModel.BatchRunningVisibility}"
-                                   Icon="{ui:SymbolIcon Dismiss24}"/>
-                    </StackPanel>
+                    <ui:TextBox
+                        Grid.Column="0"
+                        x:Name="TitleIDBox"
+                        IsEnabled="{Binding ViewModel.TitleIDEnabled}"
+                        Padding="8,4"
+                        Text="{Binding ViewModel.TitleIDOverride, Mode=TwoWay}"
+                        PlaceholderText="Title ID"
+                        ClearButtonEnabled="False" />
+                    <ui:Button
+                        Grid.Column="1"
+                        x:Name="TitleIDRefreshButton"
+                        IsEnabled="{Binding ViewModel.TitleIDEnabled}"
+                        Margin="4,0,0,0"
+                        Padding="8,4"
+                        ToolTip="Fetch Achievements for TitleID"
+                        Icon="{ui:SymbolIcon ArrowSync24}"
+                        Command="{Binding ViewModel.RefreshAchievementsCommand}"/>
                 </Grid>
-            </Border>
 
-            <DataGrid Grid.Row="1"  
-                      VerticalScrollBarVisibility="Visible" 
-                      HorizontalScrollBarVisibility="Visible"
-                      Margin="0,0,0,5" 
-                      AutoGenerateColumns="False"  
-                      ItemsSource="{Binding ViewModel.DGAchievements}" 
-                      IsReadOnly="False"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="False"
-                      CanUserReorderColumns="False"
-                      CanUserResizeColumns="True"
-                      CanUserResizeRows="False"
-                      CanUserSortColumns="True"
-            >
+                <!-- Search Box -->
+                <Grid Grid.Column="1" Margin="0,0,10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBox
+                        Grid.Column="0"
+                        x:Name="SearchBox"
+                        IsEnabled="{Binding ViewModel.TitleIDEnabled}"
+                        Padding="10,4"
+                        Text="{Binding ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="Search achievements..."
+                        ClearButtonEnabled="True" 
+                        KeyDown="SearchBox_OnKeyDownAsync" />
+                    <ui:Button
+                        Grid.Column="1"
+                        x:Name="SearchButton"
+                        IsEnabled="{Binding ViewModel.TitleIDEnabled}"
+                        Margin="4,0,0,0"
+                        Padding="8,4"
+                        Icon="{ui:SymbolIcon Search24}"
+                        Command="{Binding ViewModel.SearchAndFilterAchievementsCommand}"/>
+                </Grid>
+
+                <!-- Status Filter -->
+                <ComboBox
+                    Grid.Column="2"
+                    x:Name="FilterBox"
+                    Margin="0,0,10,0"
+                    IsEnabled="{Binding ViewModel.TitleIDEnabled}"
+                    Padding="10,4"
+                    ItemsSource="{Binding ViewModel.FilterOptions}"
+                    SelectedIndex="{Binding ViewModel.FilterIndex, Mode=TwoWay}" />
+
+                <!-- Sort Filter -->
+                <ComboBox
+                    Grid.Column="3"
+                    x:Name="SortBox"
+                    Margin="0,0,10,0"
+                    IsEnabled="{Binding ViewModel.TitleIDEnabled}"
+                    Padding="10,4"
+                    ItemsSource="{Binding ViewModel.SortOptions}"
+                    SelectedIndex="{Binding ViewModel.SortIndex, Mode=TwoWay}" />
+
+                <!-- Game Title Pill -->
+                <Border Grid.Column="4" Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="6" Padding="10,4" Margin="0,0,10,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="Games24" Margin="0,0,6,0" Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                        <TextBlock Text="{Binding ViewModel.GameName}" FontWeight="SemiBold" FontSize="12" MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Action Buttons -->
+                <StackPanel Grid.Column="5" Orientation="Horizontal">
+                    <ui:Button
+                        x:Name="UnlockAllButton"
+                        IsEnabled="{Binding ViewModel.IsUnlockAllEnabled}"
+                        Margin="0,0,6,0"
+                        Padding="10,5"
+                        Appearance="Primary"
+                        Content="Unlock All"
+                        Icon="{ui:SymbolIcon CheckmarkCircle24}"
+                        Command="{Binding ViewModel.UnlockAllCommand}" />
+                    <ui:Button
+                        x:Name="RefreshButton"
+                        Padding="10,5"
+                        Content="Refresh"
+                        Icon="{ui:SymbolIcon ArrowSync24}"
+                        Command="{Binding ViewModel.RefreshAchievementsCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Batch Control Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1"
+                CornerRadius="8" Padding="12,8" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ui:Button Grid.Column="0" Content="Select Locked" Margin="0,0,6,0" Padding="8,4" Command="{Binding ViewModel.SelectAllLockedCommand}" Icon="{ui:SymbolIcon CheckmarkCircle24}"/>
+                <ui:Button Grid.Column="1" Content="Clear Selection" Margin="0,0,12,0" Padding="8,4" Command="{Binding ViewModel.DeselectAllCommand}"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Text="Safety Delay:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ComboBox ItemsSource="{Binding ViewModel.DelayPresetOptions}" SelectedIndex="{Binding ViewModel.DelayPresetIndex, Mode=TwoWay}" Width="150" Padding="8,3"/>
+                </StackPanel>
+
+                <CheckBox Grid.Column="3" Content="Auto-Spoof" IsChecked="{Binding ViewModel.AutoSpoofDuringBatch, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <CheckBox Grid.Column="4" Content="Reveal Secrets" IsChecked="{Binding ViewModel.RevealSecretDetails, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                <StackPanel Grid.Column="5" Orientation="Vertical" VerticalAlignment="Center" Margin="6,0,12,0" Visibility="{Binding ViewModel.BatchRunningVisibility}">
+                    <TextBlock Text="{Binding ViewModel.BatchStatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <ProgressBar Value="{Binding ViewModel.BatchProgress}" Height="6" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ui:Button Content="Batch Unlock" Appearance="Primary" Padding="12,5"
+                               Command="{Binding ViewModel.StartBatchUnlockCommand}"
+                               Visibility="{Binding ViewModel.BatchNotRunningVisibility}"
+                               Icon="{ui:SymbolIcon Play24}"/>
+                    <ui:Button Content="Cancel Batch" Appearance="Danger" Padding="12,5"
+                               Command="{Binding ViewModel.CancelBatchUnlockCommand}"
+                               Visibility="{Binding ViewModel.BatchRunningVisibility}"
+                               Icon="{ui:SymbolIcon Dismiss24}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 3. Fully Themed Modern DataGrid -->
+        <Border Grid.Row="2" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1"
+                CornerRadius="8" Padding="0" ClipToBounds="True">
+            <DataGrid
+                x:Name="AchievementsDataGrid"
+                Background="Transparent"
+                RowBackground="{DynamicResource ControlFillColorDefaultBrush}"
+                AlternatingRowBackground="{DynamicResource ControlFillColorSecondaryBrush}"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                GridLinesVisibility="Horizontal"
+                HorizontalGridLinesBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                VerticalGridLinesBrush="Transparent"
+                BorderThickness="0"
+                AutoGenerateColumns="False"  
+                ItemsSource="{Binding ViewModel.DGAchievements}" 
+                IsReadOnly="False"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                CanUserReorderColumns="False"
+                CanUserResizeColumns="True"
+                CanUserResizeRows="False"
+                CanUserSortColumns="True"
+                HeadersVisibility="Column"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Auto">
+
+                <!-- Column Header Style -->
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Padding" Value="8,8"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+
+                <!-- Row Style -->
                 <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <Setter Property="MinHeight" Value="42"/>
                         <Setter Property="ContextMenu">
                             <Setter.Value>
                                 <ContextMenu>
@@ -255,50 +236,90 @@
                         </Setter>
                     </Style>
                 </DataGrid.RowStyle>
+
+                <!-- Cell Style -->
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                                        <ContentPresenter VerticalAlignment="Center" />
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
+
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="0.05*" IsReadOnly="False"/>
-                    <DataGridTextColumn Header="ID" Binding="{Binding ID}" Width="0.05*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Achievement" Binding="{Binding Name}" Width="0.18*" IsReadOnly="True">
+                    <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="55" IsReadOnly="False"/>
+                    <DataGridTextColumn Header="ID" Binding="{Binding ID}" Width="50" IsReadOnly="True"/>
+
+                    <!-- Achievement Name -->
+                    <DataGridTextColumn Header="Achievement" Binding="{Binding Name}" Width="1.4*" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextWrapping" Value="Wrap" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Description" MaxWidth="300" Binding="{Binding Description}" Width="0.25*" IsReadOnly="True">
+
+                    <!-- Description -->
+                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextWrapping" Value="Wrap" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Secret" Binding="{Binding IsSecret}"  Width="0.06*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Date Unlocked" Binding="{Binding DateUnlocked}" Width="0.20*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="G's" Binding="{Binding Gamerscore}" Width="0.05*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Percentage" Binding="{Binding RarityPercentage}" Width="0.09*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Rarity" Binding="{Binding RarityCategory}" Width="0.08*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="State" Binding="{Binding ProgressState}" Width="0.08*" IsReadOnly="True"/>
-                    <DataGridTemplateColumn Header="Guide" Width="0.07*">
+
+                    <DataGridTextColumn Header="Secret" Binding="{Binding IsSecret}" Width="65" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Date Unlocked" Binding="{Binding DateUnlocked}" Width="130" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="G's" Binding="{Binding Gamerscore}" Width="55" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Unlock %" Binding="{Binding RarityPercentage}" Width="75" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Rarity" Binding="{Binding RarityCategory}" Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="State" Binding="{Binding ProgressState}" Width="80" IsReadOnly="True"/>
+
+                    <!-- Guide Button -->
+                    <DataGridTemplateColumn Header="Guide" Width="55">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ui:Button Margin="2" Padding="6,4" ToolTip="Find TrueAchievements Guide"
+                                <ui:Button Margin="1" Padding="5,3" ToolTip="Find TrueAchievements Guide"
                                            Command="{Binding DataContext.ViewModel.OpenTrueAchievementsGuideCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                            CommandParameter="{Binding}"
                                            Icon="{ui:SymbolIcon Globe24}"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Unlock" Width="0.10*">
+
+                    <!-- Unlock Button -->
+                    <DataGridTemplateColumn Header="Unlock" Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Margin="5,5,5,5" Click="UnlockButton" Tag="{Binding Index, Mode=TwoWay}"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        IsEnabled="{Binding IsUnlockable}">Unlock</Button>
+                                <ui:Button Margin="2" Padding="8,4" Click="UnlockButton" Tag="{Binding Index, Mode=TwoWay}"
+                                           HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                           Appearance="Primary"
+                                           IsEnabled="{Binding IsUnlockable}" Content="Unlock"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
-        </Grid>
+        </Border>
     </Grid>
 </Page>
