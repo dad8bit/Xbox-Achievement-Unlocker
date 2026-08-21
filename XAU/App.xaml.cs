@@ -24,23 +24,27 @@ public partial class App
             services.AddHttpClient("XboxRestAPI")
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
-                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                    AutomaticDecompression = DecompressionMethods.All
                 });
 
             services.AddHttpClient("XboxSpoofer")
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
-                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                    AutomaticDecompression = DecompressionMethods.All
                 });
 
             services.AddHttpClient("XboxEvents")
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
-                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    AutomaticDecompression = DecompressionMethods.All,
                     ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                 });
 
-            services.AddHttpClient("OAuth");
+            services.AddHttpClient("OAuth")
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.All
+                });
 
             // Core Services
             services.AddSingleton<ISessionService, SessionService>();

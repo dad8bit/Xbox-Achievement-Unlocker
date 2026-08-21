@@ -42,14 +42,14 @@ public class XboxRestAPI
 
         var handler = new HttpClientHandler
         {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            AutomaticDecompression = DecompressionMethods.All
         };
         _httpClient = new HttpClient(handler);
         _spooferClient = new HttpClient(handler);
 
         var insecureEventsHandler = new HttpClientHandler
         {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            AutomaticDecompression = DecompressionMethods.All,
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
         _eventBasedClient = new HttpClient(insecureEventsHandler);
@@ -138,15 +138,24 @@ public class XboxRestAPI
 
     public async Task<BasicProfile?> GetBasicProfileAsync()
     {
-        using var request = CreateRequest(HttpMethod.Get, BasicXboxAPIUris.GamertagUrl, HeaderValues.ContractVersion2, Hosts.Profile);
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            using var request = CreateRequest(HttpMethod.Get, BasicXboxAPIUris.GamertagUrl, HeaderValues.ContractVersion2, Hosts.Profile);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<BasicProfile>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get basic profile");
             return null;
-
-        return JsonConvert.DeserializeObject<BasicProfile>(content);
+        }
     }
 
     public async Task<BasicProfile?> GetFullProfileSettingsAsync(string xuid)
@@ -154,45 +163,47 @@ public class XboxRestAPI
         if (string.IsNullOrWhiteSpace(xuid))
             return null;
 
-        var settingsList = "GameDisplayPicRaw,Gamerscore,Gamertag,AccountTier,XboxOneRep,Bio,Location,Tenure,Watermarks,RealName";
-        var url = $"https://profile.xboxlive.com/users/xuid({xuid})/profile/settings?settings={settingsList}";
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.Profile);
-        var response = await _httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-            return null;
-
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
         try
         {
+            var settingsList = "GameDisplayPicRaw,Gamerscore,Gamertag,AccountTier,XboxOneRep,Bio,Location,Tenure,Watermarks,RealName";
+            var url = $"https://profile.xboxlive.com/users/xuid({xuid})/profile/settings?settings={settingsList}";
+            using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.Profile);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
             return JsonConvert.DeserializeObject<BasicProfile>(content);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to get full profile settings for xuid {Xuid}", xuid);
             return null;
         }
     }
 
     public async Task<Profile?> GetProfileAsync(string xuid)
     {
-        var url = string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid);
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion5, Hosts.PeopleHub);
-        var response = await _httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-            return null;
-
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
         try
         {
+            var url = string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid);
+            using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion5, Hosts.PeopleHub);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
             return JsonConvert.DeserializeObject<Profile>(content);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to get PeopleHub profile for xuid {Xuid}", xuid);
             return null;
         }
     }
@@ -204,27 +215,35 @@ public class XboxRestAPI
             return null;
         }
 
-        var url = string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid);
-        using var request = CreateRequest(HttpMethod.Post, url, HeaderValues.ContractVersion2);
-
-        var gameTitleRequest = new GameTitleRequest
+        try
         {
-            Pfns = null,
-            TitleIds = new List<string> { titleId }
-        };
+            var url = string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid);
+            using var request = CreateRequest(HttpMethod.Post, url, HeaderValues.ContractVersion2);
 
-        request.Content = new StringContent(
-            JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept);
+            var gameTitleRequest = new GameTitleRequest
+            {
+                Pfns = null,
+                TitleIds = new List<string> { titleId }
+            };
 
-        var response = await _httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
+            request.Content = new StringContent(
+                JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept);
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<GameTitle>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get game title for titleId {TitleId}", titleId);
             return null;
-
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return JsonConvert.DeserializeObject<GameTitle>(content);
+        }
     }
 
     public async Task<Gamepass?> GetGamepassMembershipAsync(string xuid)
@@ -234,17 +253,25 @@ public class XboxRestAPI
             return null;
         }
 
-        var url = string.Format(InterpolatedXboxAPIUrls.GamepassMembershipUrl, xuid);
-        using var request = CreateRequest(HttpMethod.Get, url);
-        var response = await _httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-            return null;
+        try
+        {
+            var url = string.Format(InterpolatedXboxAPIUrls.GamepassMembershipUrl, xuid);
+            using var request = CreateRequest(HttpMethod.Get, url);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
 
-        return JsonConvert.DeserializeObject<Gamepass>(content);
+            return JsonConvert.DeserializeObject<Gamepass>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get GamePass membership for xuid {Xuid}", xuid);
+            return null;
+        }
     }
 
     public async Task<TitlesList?> GetGamesListAsync(string xuid)
@@ -254,16 +281,25 @@ public class XboxRestAPI
             return null;
         }
 
-        var url = string.Format(InterpolatedXboxAPIUrls.TitlesUrl, xuid);
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.TitleHub);
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            var url = string.Format(InterpolatedXboxAPIUrls.TitlesUrl, xuid);
+            using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.TitleHub);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<TitlesList>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get games list for xuid {Xuid}", xuid);
             return null;
-
-        return JsonConvert.DeserializeObject<TitlesList>(content);
+        }
     }
 
     public async Task<JObject?> GetGamertagProfileAsync(string gamertag)
@@ -273,16 +309,25 @@ public class XboxRestAPI
             return null;
         }
 
-        var url = string.Format(InterpolatedXboxAPIUrls.GamertagSearch, Uri.EscapeDataString(gamertag));
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.Profile);
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            var url = string.Format(InterpolatedXboxAPIUrls.GamertagSearch, Uri.EscapeDataString(gamertag));
+            using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.Profile);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JObject.Parse(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get gamertag profile for {Gamertag}", gamertag);
             return null;
-
-        return JObject.Parse(content);
+        }
     }
 
     public async Task<GameStatsResponse?> GetGameStatsAsync(string xuid, string titleId)
@@ -292,26 +337,34 @@ public class XboxRestAPI
             return null;
         }
 
-        using var request = CreateRequest(HttpMethod.Post, BasicXboxAPIUris.UserStatsUrl, HeaderValues.ContractVersion2);
-        var stat = new GameStat { TitleId = titleId };
-        var gameStatsRequest = new GameStatsRequest
+        try
         {
-            Xuids = new List<string> { xuid },
-            Stats = new List<GameStat> { stat }
-        };
+            using var request = CreateRequest(HttpMethod.Post, BasicXboxAPIUris.UserStatsUrl, HeaderValues.ContractVersion2);
+            var stat = new GameStat { TitleId = titleId };
+            var gameStatsRequest = new GameStatsRequest
+            {
+                Xuids = new List<string> { xuid },
+                Stats = new List<GameStat> { stat }
+            };
 
-        request.Content = new StringContent(
-            JsonConvert.SerializeObject(gameStatsRequest), Encoding.UTF8, HeaderValues.Accept);
+            request.Content = new StringContent(
+                JsonConvert.SerializeObject(gameStatsRequest), Encoding.UTF8, HeaderValues.Accept);
 
-        var response = await _httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<GameStatsResponse>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get game stats for title {TitleId}", titleId);
             return null;
-
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return JsonConvert.DeserializeObject<GameStatsResponse>(content);
+        }
     }
 
     private HttpRequestMessage CreatePresenceRequest(HttpMethod method, string url, string? contractVersion = null)
@@ -331,32 +384,39 @@ public class XboxRestAPI
 
     private async Task<SpoofResult> PostSpoofAsync(string url, string requestBody, string apiName, string contractVersion = HeaderValues.ContractVersion3)
     {
-        using var request = CreatePresenceRequest(HttpMethod.Post, url, contractVersion);
-        if (!string.IsNullOrEmpty(requestBody))
+        try
         {
-            request.Content = new StringContent(requestBody, Encoding.UTF8, HeaderValues.Accept);
+            using var request = CreatePresenceRequest(HttpMethod.Post, url, contractVersion);
+            if (!string.IsNullOrEmpty(requestBody))
+            {
+                request.Content = new StringContent(requestBody, Encoding.UTF8, HeaderValues.Accept);
+            }
+
+            var response = await _spooferClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return SpoofResult.Ok();
+            }
+
+            var isRateLimited = response.StatusCode == HttpStatusCode.TooManyRequests
+                || (response.Headers.TryGetValues("Retry-After", out var retryAfterValues) && retryAfterValues.Any());
+
+            var isForbidden = response.StatusCode == HttpStatusCode.Forbidden;
+
+            var message = isRateLimited
+                ? "Xbox is rate limiting spoofing requests. Wait a moment before trying again."
+                : isForbidden
+                    ? "Xbox rejected the spoof request (403 Forbidden). Refresh your token and try again."
+                    : $"{apiName} failed with {(int)response.StatusCode} {response.StatusCode}. {responseBody}";
+
+            return SpoofResult.Fail(message);
         }
-
-        var response = await _spooferClient.SendAsync(request);
-        var responseBody = await response.Content.ReadAsStringAsync();
-
-        if (response.IsSuccessStatusCode)
+        catch (Exception ex)
         {
-            return SpoofResult.Ok();
+            return SpoofResult.Fail($"{apiName} request error: {ex.Message}");
         }
-
-        var isRateLimited = response.StatusCode == HttpStatusCode.TooManyRequests
-            || (response.Headers.TryGetValues("Retry-After", out var retryAfterValues) && retryAfterValues.Any());
-
-        var isForbidden = response.StatusCode == HttpStatusCode.Forbidden;
-
-        var message = isRateLimited
-            ? "Xbox is rate limiting spoofing requests. Wait a moment before trying again."
-            : isForbidden
-                ? "Xbox rejected the spoof request (403 Forbidden). Refresh your token and try again."
-                : $"{apiName} failed with {(int)response.StatusCode} {response.StatusCode}. {responseBody}";
-
-        return SpoofResult.Fail(message);
     }
 
     public async Task<SpoofResult> SendHeartbeatAsync(string xuid, string spoofedTitleId)
@@ -517,16 +577,25 @@ public class XboxRestAPI
             return null;
         }
 
-        var url = string.Format(InterpolatedXboxAPIUrls.QueryAchievementsUrl, xuid, titleId);
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion4, Hosts.Achievements);
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            var url = string.Format(InterpolatedXboxAPIUrls.QueryAchievementsUrl, xuid, titleId);
+            using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion4, Hosts.Achievements);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<AchievementsResponse>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get achievements for title {TitleId}", titleId);
             return null;
-
-        return JsonConvert.DeserializeObject<AchievementsResponse>(content);
+        }
     }
 
     public async Task<Xbox360AchievementResponse?> GetAchievementsFor360TitleAsync(string xuid, string titleId)
@@ -536,16 +605,25 @@ public class XboxRestAPI
             return null;
         }
 
-        var url = string.Format(InterpolatedXboxAPIUrls.QueryAchievements360Url, xuid, titleId);
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion3, Hosts.Achievements);
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            var url = string.Format(InterpolatedXboxAPIUrls.QueryAchievements360Url, xuid, titleId);
+            using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion3, Hosts.Achievements);
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<Xbox360AchievementResponse>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get 360 achievements for title {TitleId}", titleId);
             return null;
-
-        return JsonConvert.DeserializeObject<Xbox360AchievementResponse>(content);
+        }
     }
 
     public async Task UnlockTitleBasedAchievementAsync(string serviceConfigId, string titleId, string xuid, string achievementId, bool useFakeSignature = false)
@@ -633,22 +711,30 @@ public class XboxRestAPI
             return null;
         }
 
-        using var request = CreateRequest(HttpMethod.Post, BasicXboxAPIUris.GamepassCatalogUrl);
-        var gamepassProducts = new GamepassProductsRequest
+        try
         {
-            Products = new List<string> { prodId }
-        };
-        request.Content = new StringContent(
-            JsonConvert.SerializeObject(gamepassProducts), Encoding.UTF8, HeaderValues.Accept);
+            using var request = CreateRequest(HttpMethod.Post, BasicXboxAPIUris.GamepassCatalogUrl);
+            var gamepassProducts = new GamepassProductsRequest
+            {
+                Products = new List<string> { prodId }
+            };
+            request.Content = new StringContent(
+                JsonConvert.SerializeObject(gamepassProducts), Encoding.UTF8, HeaderValues.Accept);
 
-        var response = await _httpClient.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            return JsonConvert.DeserializeObject<GamePassProducts>(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get product {ProdId} from GamePass", prodId);
             return null;
-
-        var content = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return JsonConvert.DeserializeObject<GamePassProducts>(content);
+        }
     }
 }
