@@ -86,7 +86,7 @@ public partial class SettingsService : ObservableObject, ISettingsService
         return new XAUSettings
         {
             SettingsVersion = "2",
-            ToolVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "26.06.14",
+            ToolVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.1.0",
             UnlockAllEnabled = false,
             AutoSpooferEnabled = false,
             AutoLaunchXboxAppEnabled = false,

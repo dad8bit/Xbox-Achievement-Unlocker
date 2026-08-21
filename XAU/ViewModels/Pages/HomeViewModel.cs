@@ -24,7 +24,9 @@ namespace XAU.ViewModels.Pages
 
     public partial class HomeViewModel : ObservableObject, INavigationAware
     {
-        public static string ToolVersion = "26.06.14";
+        public static string ToolVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version != null
+            ? $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!.Major}.{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!.Minor}.{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!.Build}"
+            : "0.1.0";
         public static string EventsVersion = "1.0";
 
         private readonly ISessionService _sessionService;
