@@ -127,8 +127,11 @@
                       VerticalScrollBarVisibility="Auto" 
                       HorizontalScrollBarVisibility="Disabled"
                       CanContentScroll="False"
-                      Background="Transparent">
-            <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}" Background="Transparent">
+                      Background="Transparent"
+                      PreviewMouseWheel="GamesScrollViewer_PreviewMouseWheel">
+            <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}"
+                          ScrollViewer.CanContentScroll="False"
+                          Background="Transparent">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal" Background="Transparent"/>

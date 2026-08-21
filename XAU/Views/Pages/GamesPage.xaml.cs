@@ -67,7 +67,32 @@ namespace XAU.Views.Pages
         {
             if (GamesScrollViewer != null)
             {
-                GamesScrollViewer.ScrollToVerticalOffset(GamesScrollViewer.VerticalOffset - (e.Delta * 0.75));
+                GamesScrollViewer_PreviewMouseWheel(GamesScrollViewer, e);
+            }
+        }
+
+        private void GamesScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is ScrollViewer scv)
+            {
+                double delta = e.Delta;
+                double offset = scv.VerticalOffset - (delta * 0.75);
+                scv.ScrollToVerticalOffset(offset);
+
+                // Ensure scrolling occurs even if virtualized or in logical mode
+                if (delta > 0)
+                {
+                    scv.LineUp();
+                    scv.LineUp();
+                    scv.LineUp();
+                }
+                else if (delta < 0)
+                {
+                    scv.LineDown();
+                    scv.LineDown();
+                    scv.LineDown();
+                }
+
                 e.Handled = true;
             }
         }
