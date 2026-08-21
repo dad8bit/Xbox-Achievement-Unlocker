@@ -42,37 +42,42 @@ namespace XAU.Views.Pages
             }
         }
 
-        private ScrollViewer? _dataGridScrollViewer;
+        private ScrollViewer? _parentScrollViewer;
 
         private void AchievementsDataGrid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (_dataGridScrollViewer == null && sender is DependencyObject dep)
+            if (_parentScrollViewer == null && sender is DependencyObject dep)
             {
-                _dataGridScrollViewer = FindVisualChild<ScrollViewer>(dep);
+                _parentScrollViewer = FindParent<ScrollViewer>(dep);
             }
 
-            if (_dataGridScrollViewer != null)
+            if (_parentScrollViewer != null)
             {
-                _dataGridScrollViewer.ScrollToVerticalOffset(_dataGridScrollViewer.VerticalOffset - (e.Delta * 0.75));
+                _parentScrollViewer.ScrollToVerticalOffset(_parentScrollViewer.VerticalOffset - (e.Delta * 0.75));
+                e.Handled = true;
+            }
+            else if (sender is FrameworkElement element && element.Parent is UIElement parent)
+            {
+                var eventArg = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+                {
+                    RoutedEvent = UIElement.MouseWheelEvent,
+                    Source = sender
+                };
+                parent.RaiseEvent(eventArg);
                 e.Handled = true;
             }
         }
 
-        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
         {
-            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            var parent = System.Windows.Media.VisualTreeHelper.GetParent(child);
+            while (parent != null)
             {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                if (child is T typedChild)
+                if (parent is T typedParent)
                 {
-                    return typedChild;
+                    return typedParent;
                 }
-
-                var childOfChild = FindVisualChild<T>(child);
-                if (childOfChild != null)
-                {
-                    return childOfChild;
-                }
+                parent = System.Windows.Media.VisualTreeHelper.GetParent(parent);
             }
             return null;
         }
