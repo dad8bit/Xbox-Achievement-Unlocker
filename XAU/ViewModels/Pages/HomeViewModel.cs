@@ -405,20 +405,108 @@ namespace XAU.ViewModels.Pages
 
         private async Task GrabProfileAsync()
         {
-            if (string.IsNullOrEmpty(_sessionService.Xuid))
+            if (string.IsNullOrWhiteSpace(_sessionService.Xuid) || _sessionService.Xuid == "0")
                 return;
 
             try
             {
-                var profileResponse = await _xboxRestAPI.GetProfileAsync(_sessionService.Xuid);
-                if (profileResponse?.People?.Any() != true)
+                Profile? profileResponse = null;
+                try
+                {
+                    profileResponse = await _xboxRestAPI.GetProfileAsync(_sessionService.Xuid);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "PeopleHub profile lookup failed, falling back to Profile settings");
+                }
+
+                var person = profileResponse?.People?.FirstOrDefault();
+
+                if (person == null)
+                {
+                    var fallbackProfile = await _xboxRestAPI.GetFullProfileSettingsAsync(_sessionService.Xuid);
+                    var profileUser = fallbackProfile?.ProfileUsers?.FirstOrDefault();
+                    if (profileUser != null)
+                    {
+                        var settingsDict = profileUser.Settings.ToDictionary(s => s.Id ?? "", s => s.Value ?? "", StringComparer.OrdinalIgnoreCase);
+
+                        if (Settings.PrivacyMode)
+                        {
+                            GamerTag = "Gamertag: Hidden";
+                            Xuid = "XUID: Hidden";
+                            GamerPic = "pack://application:,,,/Assets/cirno.png";
+                            GamerScore = "Gamerscore: Hidden";
+                            ProfileRep = "Reputation: Hidden";
+                            AccountTier = "Tier: Hidden";
+                            CurrentlyPlaying = "Currently Playing: Hidden";
+                            ActiveDevice = "Active Device: Hidden";
+                            IsVerified = "Verified: Hidden";
+                            Location = "Location: Hidden";
+                            Tenure = "Tenure: Hidden";
+                            Following = "Following: Hidden";
+                            Followers = "Followers: Hidden";
+                            Gamepass = "Gamepass: Hidden";
+                            Bio = "Bio: Hidden";
+                        }
+                        else
+                        {
+                            var gt = settingsDict.GetValueOrDefault("Gamertag", _sessionService.Gamertag ?? "Unknown");
+                            var xuidStr = profileUser.Id ?? _sessionService.Xuid;
+                            var pic = settingsDict.GetValueOrDefault("GameDisplayPicRaw", "pack://application:,,,/Assets/default.png");
+                            var score = settingsDict.GetValueOrDefault("Gamerscore", "Unknown");
+                            var rep = settingsDict.GetValueOrDefault("XboxOneRep", "Unknown");
+                            var tier = settingsDict.GetValueOrDefault("AccountTier", "Unknown");
+                            var bio = settingsDict.GetValueOrDefault("Bio", "No Bio");
+                            var location = settingsDict.GetValueOrDefault("Location", "Unknown");
+                            var tenure = settingsDict.GetValueOrDefault("Tenure", "Unknown");
+
+                            GamerTag = $"Gamertag: {gt}";
+                            Xuid = $"XUID: {xuidStr}";
+                            GamerPic = pic.Replace("&mode=Padding", "");
+                            GamerScore = $"Gamerscore: {score}";
+                            ProfileRep = $"Reputation: {rep}";
+                            AccountTier = $"Tier: {tier}";
+                            Bio = $"Bio: {bio}";
+                            Location = $"Location: {location}";
+                            Tenure = $"Tenure: {tenure}";
+                            CurrentlyPlaying = "Currently Playing: Unknown";
+                            ActiveDevice = "Active Device: Unknown";
+                            IsVerified = "Verified: False";
+                            Following = "Following: Unknown";
+                            Followers = "Followers: Unknown";
+
+                            try
+                            {
+                                var gpuResponse = await _xboxRestAPI.GetGamepassMembershipAsync(_sessionService.Xuid);
+                                Gamepass = $"Gamepass: {gpuResponse?.GamepassMembership ?? gpuResponse?.Data?.GamepassMembership ?? "Unknown"}";
+                            }
+                            catch
+                            {
+                                Gamepass = "Gamepass: Unknown";
+                            }
+
+                            Watermarks.Clear();
+                            if (int.TryParse(tenure, out var tenureInt))
+                            {
+                                var tenureBadge = tenureInt.ToString("D2");
+                                Watermarks.Add(new ImageItem { ImageUrl = $@"{BasicXboxAPIUris.WatermarksUrl}tenure/{tenureBadge}.png" });
+                            }
+                        }
+
+                        _grabbedProfile = true;
+                        _snackbarService.Show("Success", "Profile information grabbed.", ControlAppearance.Success,
+                            new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
+                        return;
+                    }
+                }
+
+                if (person == null)
                 {
                     _snackbarService.Show("Error", "Failed to grab profile information.", ControlAppearance.Danger,
                         new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
                     return;
                 }
 
-                var person = profileResponse.People.First();
                 if (Settings.PrivacyMode)
                 {
                     GamerTag = "Gamertag: Hidden";

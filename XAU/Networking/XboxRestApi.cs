@@ -130,10 +130,9 @@ public class XboxRestAPI
 
         if (!string.IsNullOrEmpty(host))
         {
-            request.Headers.Add(HeaderNames.Host, host);
+            request.Headers.Host = host;
         }
 
-        request.Headers.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
         return request;
     }
 
@@ -150,18 +149,52 @@ public class XboxRestAPI
         return JsonConvert.DeserializeObject<BasicProfile>(content);
     }
 
-    public async Task<Profile?> GetProfileAsync(string xuid)
+    public async Task<BasicProfile?> GetFullProfileSettingsAsync(string xuid)
     {
-        var url = string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid);
-        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion5, Hosts.PeopleHub);
+        if (string.IsNullOrWhiteSpace(xuid))
+            return null;
+
+        var settingsList = "GameDisplayPicRaw,Gamerscore,Gamertag,AccountTier,XboxOneRep,Bio,Location,Tenure,Watermarks,RealName";
+        var url = $"https://profile.xboxlive.com/users/xuid({xuid})/profile/settings?settings={settingsList}";
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.Profile);
         var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+            return null;
 
         var content = await response.Content.ReadAsStringAsync();
         if (string.IsNullOrWhiteSpace(content))
             return null;
 
-        return JsonConvert.DeserializeObject<Profile>(content);
+        try
+        {
+            return JsonConvert.DeserializeObject<BasicProfile>(content);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<Profile?> GetProfileAsync(string xuid)
+    {
+        var url = string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid);
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion5, Hosts.PeopleHub);
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        try
+        {
+            return JsonConvert.DeserializeObject<Profile>(content);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<GameTitle?> GetGameTitleAsync(string xuid, string titleId)
