@@ -201,8 +201,10 @@
                 CanUserResizeRows="False"
                 CanUserSortColumns="True"
                 HeadersVisibility="Column"
+                ScrollViewer.CanContentScroll="False"
                 VerticalScrollBarVisibility="Auto"
-                HorizontalScrollBarVisibility="Auto">
+                HorizontalScrollBarVisibility="Auto"
+                PreviewMouseWheel="AchievementsDataGrid_PreviewMouseWheel">
 
                 <!-- Column Header Style -->
                 <DataGrid.ColumnHeaderStyle>

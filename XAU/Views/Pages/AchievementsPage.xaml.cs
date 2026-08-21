@@ -39,8 +39,42 @@ namespace XAU.Views.Pages
                 //for some reason, the search text is not being updated when pressing enter
                 ViewModel.SearchText = SearchBox.Text;
                 await ViewModel.SearchAndFilterAchievements();
-
             }
+        }
+
+        private ScrollViewer? _dataGridScrollViewer;
+
+        private void AchievementsDataGrid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (_dataGridScrollViewer == null && sender is DependencyObject dep)
+            {
+                _dataGridScrollViewer = FindVisualChild<ScrollViewer>(dep);
+            }
+
+            if (_dataGridScrollViewer != null)
+            {
+                _dataGridScrollViewer.ScrollToVerticalOffset(_dataGridScrollViewer.VerticalOffset - (e.Delta * 0.75));
+                e.Handled = true;
+            }
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+
+                var childOfChild = FindVisualChild<T>(child);
+                if (childOfChild != null)
+                {
+                    return childOfChild;
+                }
+            }
+            return null;
         }
     }
 }
