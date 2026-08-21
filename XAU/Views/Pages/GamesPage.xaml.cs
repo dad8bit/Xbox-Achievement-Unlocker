@@ -62,5 +62,14 @@ namespace XAU.Views.Pages
                 uiImage.Source = new BitmapImage(new Uri("pack://application:,,,/Assets/cirno.png"));
             }
         }
+
+        private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is ScrollViewer scrollViewer)
+            {
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - (e.Delta * 0.75));
+                e.Handled = true;
+            }
+        }
     }
 }

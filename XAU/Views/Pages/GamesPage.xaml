@@ -123,7 +123,11 @@
                          Width="{Binding ViewModel.LoadingSize}" />
 
         <!-- 2. Interactive Game Posters Grid -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer Grid.Row="1" x:Name="GamesScrollViewer"
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="False"
+                      PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
             <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
