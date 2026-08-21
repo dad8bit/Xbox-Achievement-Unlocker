@@ -27,6 +27,26 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private string _gameName = "";
         [ObservableProperty] private bool _isUnlockAllEnabled = false;
         [ObservableProperty] private string _searchText = "";
+        [ObservableProperty] private List<string> _filterOptions = new List<string>
+        {
+            "All",
+            "Locked Only",
+            "Unlocked Only",
+            "Secret Only"
+        };
+        [ObservableProperty] private int _filterIndex = 0;
+
+        [ObservableProperty] private List<string> _sortOptions = new List<string>
+        {
+            "Default Order",
+            "Gamerscore (High → Low)",
+            "Gamerscore (Low → High)",
+            "Name (A → Z)",
+            "Name (Z → A)",
+            "Rarity (Rarest First)"
+        };
+        [ObservableProperty] private int _sortIndex = 0;
+
         public static string TitleID = "0";
         private bool IsTitleIDValid = false;
         public static bool NewGame = false;
@@ -704,133 +724,155 @@ namespace XAU.ViewModels.Pages
                 SpoofGame();
         }
 
+        partial void OnSearchTextChanged(string value)
+        {
+            if (IsInitialized && Achievements.Count > 0)
+            {
+                ApplyAchievementFilterAndSort();
+            }
+        }
+
+        partial void OnFilterIndexChanged(int value)
+        {
+            if (IsInitialized && Achievements.Count > 0)
+            {
+                ApplyAchievementFilterAndSort();
+            }
+        }
+
+        partial void OnSortIndexChanged(int value)
+        {
+            if (IsInitialized && Achievements.Count > 0)
+            {
+                ApplyAchievementFilterAndSort();
+            }
+        }
+
         [RelayCommand]
         public async Task SearchAndFilterAchievements()
+        {
+            ApplyAchievementFilterAndSort();
+            await Task.CompletedTask;
+        }
+
+        public void ApplyAchievementFilterAndSort()
         {
             try
             {
                 if (IsEventBased)
                 {
                     string DataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "XAU", "Events", "Data.json");
-                    var data = JObject.Parse(File.ReadAllText(DataPath));
-                    JArray SupportedGamesJ = (JArray)data["SupportedTitleIDs"];
-                    List<int> SupportedGames = SupportedGamesJ.ToObject<List<int>>();
-                    if (SupportedGames.Contains(int.Parse(TitleIDOverride)))
+                    if (File.Exists(DataPath))
                     {
-                        Unlockable = true;
-                        EventsData = (dynamic)data[TitleIDOverride];
+                        var data = JObject.Parse(File.ReadAllText(DataPath));
+                        JArray? SupportedGamesJ = (JArray?)data["SupportedTitleIDs"];
+                        List<int>? SupportedGames = SupportedGamesJ?.ToObject<List<int>>();
+                        if (int.TryParse(TitleIDOverride, out var parsedTitleId) && SupportedGames != null && SupportedGames.Contains(parsedTitleId))
+                        {
+                            Unlockable = true;
+                            EventsData = (dynamic)data[TitleIDOverride];
+                        }
                     }
-                }
-
-                CollectionViewSource.GetDefaultView(DGAchievements).Refresh();
-
-                if (string.IsNullOrWhiteSpace(SearchText) && !IsFiltered)
-                {
-                    _snackbarService.Show("Error", $"Please Enter Query Text", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
-                    return;
                 }
 
                 DGAchievements.Clear();
 
-                if (string.IsNullOrWhiteSpace(SearchText) && IsFiltered)
+                var list = new List<DGAchievement>();
+
+                for (int i = 0; i < Achievements.Count; i++)
                 {
-                    foreach (var achievement in Achievements)
+                    var achievement = Achievements[i];
+                    var gamerscore = 0;
+                    if (achievement.rewards.Count > 0 && achievement.rewards[0].type == StringConstants.Gamerscore)
                     {
-                        var gamerscore = 0;
-                        if (achievement.rewards[0].type == StringConstants.Gamerscore)
-                        {
-                            gamerscore = int.Parse(achievement.rewards[0].value);
-                        }
-
-                        var dgAchievement = new DGAchievement()
-                        {
-                            Index = DGAchievements.Count,
-                            ID = int.Parse(achievement.id),
-                            Name = achievement.name,
-                            Description = achievement.description,
-                            IsSecret = achievement.isSecret,
-                            DateUnlocked = DateTime.Parse(achievement.progression.timeUnlocked),
-                            Gamerscore = gamerscore,
-                            RarityPercentage = float.Parse(achievement.raritycurrentPercentage, CultureInfo.InvariantCulture),
-                            RarityCategory = achievement.raritycurrentCategory,
-                            ProgressState = achievement.progressState,
-                            IsUnlockable = achievement.progressState != StringConstants.Achieved && Unlockable && !IsEventBased
-                        };
-
-                        // Override with the state from _unlockedAchievements dictionary if it exists.
-                        if (_unlockedAchievements.ContainsKey(dgAchievement.ID))
-                        {
-                            var unlocked = _unlockedAchievements[dgAchievement.ID];
-                            dgAchievement.IsUnlockable = unlocked.IsUnlockable;
-                            dgAchievement.ProgressState = unlocked.ProgressState;
-                            dgAchievement.DateUnlocked = unlocked.DateUnlocked;
-                        }
-
-                        DGAchievements.Add(dgAchievement);
+                        _ = int.TryParse(achievement.rewards[0].value, out gamerscore);
                     }
 
-                    if (IsEventBased && Unlockable)
+                    _ = DateTime.TryParse(achievement.progression?.timeUnlocked, out var dateUnlocked);
+                    _ = float.TryParse(achievement.raritycurrentPercentage, NumberStyles.Any, CultureInfo.InvariantCulture, out var rarity);
+
+                    var isAchieved = achievement.progressState == StringConstants.Achieved;
+                    var dgAchievement = new DGAchievement()
                     {
-                        foreach (var achievement in DGAchievements)
-                        {
-                            if (EventsData.Achievements.ContainsKey(achievement.ID.ToString()) && achievement.ProgressState != StringConstants.Achieved)
-                            {
-                                achievement.IsUnlockable = true;
-                            }
-                        }
-                        CollectionViewSource.GetDefaultView(DGAchievements).Refresh();
-                    }
-                    IsFiltered = false;
-                    return;
-                }
+                        Index = i,
+                        ID = int.TryParse(achievement.id, out var aid) ? aid : i,
+                        Name = achievement.name,
+                        Description = achievement.description,
+                        IsSecret = achievement.isSecret,
+                        DateUnlocked = dateUnlocked,
+                        Gamerscore = gamerscore,
+                        RarityPercentage = rarity,
+                        RarityCategory = achievement.raritycurrentCategory,
+                        ProgressState = achievement.progressState,
+                        IsUnlockable = !isAchieved && Unlockable && !IsEventBased
+                    };
 
-                bool achievementsFound = false;
-
-                foreach (var achievement in Achievements)
-                {
-                    if (achievement.name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) || achievement.description.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                    if (_unlockedAchievements.TryGetValue(dgAchievement.ID, out var unlocked))
                     {
-                        var gamerscore = 0;
-                        if (achievement.rewards[0].type == StringConstants.Gamerscore)
-                        {
-                            gamerscore = int.Parse(achievement.rewards[0].value);
-                        }
-
-                        var dgAchievement = new DGAchievement()
-                        {
-                            Index = DGAchievements.Count,
-                            ID = int.Parse(achievement.id),
-                            Name = achievement.name,
-                            Description = achievement.description,
-                            IsSecret = achievement.isSecret,
-                            DateUnlocked = DateTime.Parse(achievement.progression.timeUnlocked),
-                            Gamerscore = gamerscore,
-                            RarityPercentage = float.Parse(achievement.raritycurrentPercentage, CultureInfo.InvariantCulture),
-                            RarityCategory = achievement.raritycurrentCategory,
-                            ProgressState = achievement.progressState,
-                            IsUnlockable = achievement.progressState != StringConstants.Achieved && Unlockable && !IsEventBased
-                        };
-
-                        // Override with the state from _unlockedAchievements dictionary if it exists.
-                        if (_unlockedAchievements.ContainsKey(dgAchievement.ID))
-                        {
-                            var unlockedAchievement = _unlockedAchievements[dgAchievement.ID];
-                            dgAchievement.IsUnlockable = unlockedAchievement.IsUnlockable;
-                            dgAchievement.ProgressState = unlockedAchievement.ProgressState;
-                            dgAchievement.DateUnlocked = unlockedAchievement.DateUnlocked;
-                        }
-
-                        DGAchievements.Add(dgAchievement);
-                        achievementsFound = true;
+                        dgAchievement.IsUnlockable = unlocked.IsUnlockable;
+                        dgAchievement.ProgressState = unlocked.ProgressState;
+                        dgAchievement.DateUnlocked = unlocked.DateUnlocked;
                     }
+
+                    list.Add(dgAchievement);
                 }
 
-                if (!achievementsFound)
+                IEnumerable<DGAchievement> query = list;
+
+                // 1. Text search
+                if (!string.IsNullOrWhiteSpace(SearchText))
                 {
-                    _snackbarService.Show("Error", $"No Achievements Found", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+                    var search = SearchText.Trim();
+                    query = query.Where(a => (a.Name != null && a.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                                             (a.Description != null && a.Description.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                                             a.ID.ToString().Contains(search));
                 }
 
-                if (IsEventBased && Unlockable)
+                // 2. Filter
+                switch (FilterIndex)
+                {
+                    case 1: // Locked Only
+                        query = query.Where(a => a.ProgressState != StringConstants.Achieved);
+                        break;
+                    case 2: // Unlocked Only
+                        query = query.Where(a => a.ProgressState == StringConstants.Achieved);
+                        break;
+                    case 3: // Secret Only
+                        query = query.Where(a => a.IsSecret);
+                        break;
+                    default: // All
+                        break;
+                }
+
+                // 3. Sort
+                switch (SortIndex)
+                {
+                    case 1: // Gamerscore (High → Low)
+                        query = query.OrderByDescending(a => a.Gamerscore);
+                        break;
+                    case 2: // Gamerscore (Low → High)
+                        query = query.OrderBy(a => a.Gamerscore);
+                        break;
+                    case 3: // Name (A → Z)
+                        query = query.OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase);
+                        break;
+                    case 4: // Name (Z → A)
+                        query = query.OrderByDescending(a => a.Name, StringComparer.OrdinalIgnoreCase);
+                        break;
+                    case 5: // Rarity (Rarest First)
+                        query = query.OrderBy(a => a.RarityPercentage);
+                        break;
+                    default: // Default (Index order)
+                        query = query.OrderBy(a => a.Index);
+                        break;
+                }
+
+                foreach (var a in query)
+                {
+                    DGAchievements.Add(a);
+                }
+
+                if (IsEventBased && Unlockable && EventsData?.Achievements != null)
                 {
                     foreach (var achievement in DGAchievements)
                     {
@@ -839,18 +881,14 @@ namespace XAU.ViewModels.Pages
                             achievement.IsUnlockable = true;
                         }
                     }
-                    CollectionViewSource.GetDefaultView(DGAchievements).Refresh();
                 }
 
-                IsFiltered = true;
+                CollectionViewSource.GetDefaultView(DGAchievements)?.Refresh();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Log exception (ex) if necessary
-                _snackbarService.Show("Error", "An error occurred while searching. Please try again.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+                _snackbarService.Show("Error", "An error occurred while filtering achievements.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
             }
-
-            await Task.CompletedTask;
         }
     }
 }
