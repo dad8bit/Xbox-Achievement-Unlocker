@@ -15,4 +15,7 @@ public class XAUSettings
     public string? CachedEventsToken { get; set; }
     public DateTime? EventsTokenObtainedAt { get; set; }
     public string? EventsUserHash { get; set; }
+    public string BackdropType { get; set; } = "Mica";
+    public string AccentColor { get; set; } = "Xbox Green";
+    public string ThemeMode { get; set; } = "Dark";
 }

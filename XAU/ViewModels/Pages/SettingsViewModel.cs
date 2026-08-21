@@ -37,6 +37,13 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private bool _autoGrabEventsToken;
         [ObservableProperty] private string _xauth = string.Empty;
 
+        [ObservableProperty] private List<string> _backdropOptions = new() { "Mica", "Tabbed", "Acrylic", "None" };
+        [ObservableProperty] private int _selectedBackdropIndex = 0;
+        [ObservableProperty] private List<string> _accentOptions = new() { "Xbox Green", "Neon Purple", "Cyber Blue", "Crimson Red", "Sunset Orange" };
+        [ObservableProperty] private int _selectedAccentIndex = 0;
+        [ObservableProperty] private List<string> _themeOptions = new() { "Dark", "Light" };
+        [ObservableProperty] private int _selectedThemeIndex = 0;
+
         [ObservableProperty] private bool _serverEnabled;
         [ObservableProperty] private string _serverPort = "1337";
         [ObservableProperty] private string _listeningAddress = "http://localhost:1337";
@@ -86,6 +93,87 @@ namespace XAU.ViewModels.Pages
             ListeningAddress = $"http://localhost:{ServerPort}";
         }
 
+        partial void OnSelectedBackdropIndexChanged(int value)
+        {
+            if (value >= 0 && value < BackdropOptions.Count)
+            {
+                var backdropName = BackdropOptions[value];
+                _settingsService.Current.BackdropType = backdropName;
+                SaveSettings();
+                ApplyWindowBackdrop(backdropName);
+            }
+        }
+
+        partial void OnSelectedAccentIndexChanged(int value)
+        {
+            if (value >= 0 && value < AccentOptions.Count)
+            {
+                var accentName = AccentOptions[value];
+                _settingsService.Current.AccentColor = accentName;
+                SaveSettings();
+                ApplyAccentColor(accentName);
+            }
+        }
+
+        partial void OnSelectedThemeIndexChanged(int value)
+        {
+            if (value >= 0 && value < ThemeOptions.Count)
+            {
+                var themeName = ThemeOptions[value];
+                _settingsService.Current.ThemeMode = themeName;
+                SaveSettings();
+                ApplyThemeMode(themeName);
+            }
+        }
+
+        public static void ApplyWindowBackdrop(string backdropName)
+        {
+            if (System.Windows.Application.Current?.MainWindow is FluentWindow win)
+            {
+                win.WindowBackdropType = backdropName switch
+                {
+                    "Tabbed" => WindowBackdropType.Tabbed,
+                    "Acrylic" => WindowBackdropType.Acrylic,
+                    "None" => WindowBackdropType.None,
+                    _ => WindowBackdropType.Mica
+                };
+            }
+        }
+
+        public static void ApplyAccentColor(string accentName)
+        {
+            var color = accentName switch
+            {
+                "Neon Purple" => System.Windows.Media.Color.FromRgb(138, 43, 226),
+                "Cyber Blue" => System.Windows.Media.Color.FromRgb(0, 120, 215),
+                "Crimson Red" => System.Windows.Media.Color.FromRgb(232, 17, 35),
+                "Sunset Orange" => System.Windows.Media.Color.FromRgb(255, 140, 0),
+                _ => System.Windows.Media.Color.FromRgb(16, 124, 16) // Xbox Green
+            };
+
+            try
+            {
+                Wpf.Ui.Appearance.Accent.Apply(color);
+            }
+            catch { }
+        }
+
+        public static void ApplyThemeMode(string themeName)
+        {
+            try
+            {
+                if (themeName == "Light")
+                {
+                    Wpf.Ui.Appearance.Theme.Apply(Wpf.Ui.Appearance.ThemeType.Light);
+                }
+                else
+                {
+                    Wpf.Ui.Appearance.Theme.Apply(Wpf.Ui.Appearance.ThemeType.Dark);
+                }
+            }
+            catch { }
+        }
+
         public void LoadSettings()
         {
             var settings = _settingsService.Current;
@@ -102,6 +190,16 @@ namespace XAU.ViewModels.Pages
             Xauth = _sessionService.XAuthToken;
             OAuthLogin = settings.OAuthLogin;
             AutoGrabEventsToken = settings.AutoGrabEventsToken;
+
+            // Load theme preferences
+            int bIdx = BackdropOptions.IndexOf(settings.BackdropType);
+            SelectedBackdropIndex = bIdx >= 0 ? bIdx : 0;
+
+            int aIdx = AccentOptions.IndexOf(settings.AccentColor);
+            SelectedAccentIndex = aIdx >= 0 ? aIdx : 0;
+
+            int tIdx = ThemeOptions.IndexOf(settings.ThemeMode);
+            SelectedThemeIndex = tIdx >= 0 ? tIdx : 0;
         }
 
         [RelayCommand]
@@ -123,7 +221,10 @@ namespace XAU.ViewModels.Pages
                 AutoGrabEventsToken = AutoGrabEventsToken,
                 CachedEventsToken = _sessionService.EventsToken,
                 EventsTokenObtainedAt = _sessionService.EventsTokenObtainedAt,
-                EventsUserHash = _sessionService.EventsUserHash
+                EventsUserHash = _sessionService.EventsUserHash,
+                BackdropType = SelectedBackdropIndex >= 0 && SelectedBackdropIndex < BackdropOptions.Count ? BackdropOptions[SelectedBackdropIndex] : "Mica",
+                AccentColor = SelectedAccentIndex >= 0 && SelectedAccentIndex < AccentOptions.Count ? AccentOptions[SelectedAccentIndex] : "Xbox Green",
+                ThemeMode = SelectedThemeIndex >= 0 && SelectedThemeIndex < ThemeOptions.Count ? ThemeOptions[SelectedThemeIndex] : "Dark"
             };
 
             _settingsService.SaveSettings(settings);

@@ -25,6 +25,58 @@
             HorizontalAlignment="Left"
             FontTypography="Title"
             Text="Settings" />
+        <ui:CardExpander Margin="4,2" IsExpanded="True">
+            <ui:CardExpander.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ui:TextBlock
+                        Grid.Row="0"
+                        FontTypography="Body"
+                        Text="Personalization &amp; Appearance"
+                        TextWrapping="WrapWithOverflow" />
+                    <ui:TextBlock
+                        Grid.Row="1"
+                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Customize window backdrop (Mica / Acrylic), theme mode, and accent colors."
+                        TextWrapping="WrapWithOverflow" />
+                </Grid>
+            </ui:CardExpander.Header>
+            <StackPanel>
+                <ui:Anchor Margin="-16,-16,-16,0" Padding="16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0,1,0,1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Window Backdrop Effect (Windows 11)" />
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.BackdropOptions}" SelectedIndex="{Binding ViewModel.SelectedBackdropIndex, Mode=TwoWay}" Width="160" Padding="8,4" />
+                    </Grid>
+                </ui:Anchor>
+                <ui:Anchor Margin="-16,0,-16,0" Padding="16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0,0,0,1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Accent Color Palette" />
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.AccentOptions}" SelectedIndex="{Binding ViewModel.SelectedAccentIndex, Mode=TwoWay}" Width="160" Padding="8,4" />
+                    </Grid>
+                </ui:Anchor>
+                <ui:Anchor Margin="-16,0,-16,-16" Padding="16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Application Theme Mode" />
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding ViewModel.ThemeOptions}" SelectedIndex="{Binding ViewModel.SelectedThemeIndex, Mode=TwoWay}" Width="160" Padding="8,4" />
+                    </Grid>
+                </ui:Anchor>
+            </StackPanel>
+        </ui:CardExpander>
         <ui:CardControl Margin="4,2">
             <ui:CardControl.Header>
                 <Grid>
