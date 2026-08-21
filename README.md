@@ -1,12 +1,7 @@
 # Xbox Achievement Unlocker
 
-![GitHub contributors][contributors-badge]
-![GitHub forks][forks-badge]
-![GitHub stars][stars-badge]
-![GitHub issues][issues-badge]
-![GitHub release][release-badge]
-
-[Join our Discord][discord-invite]
+> [!NOTE]
+> This repository is a community-maintained fork and continuation of [Xbox-Achievement-Unlocker](https://github.com/Fumo-Unlockers/Xbox-Achievement-Unlocker) originally created by [Draff / ItsLogic](https://github.com/ItsLogic) and contributors. All credit for the original reverse engineering, research, and architecture belongs to the upstream authors.
 
 Unlock achievements on Microsoft/Xbox games with ease. This tool is inspired by the functionality of Steam Achievements Manager and is completely free to use.
 
@@ -22,10 +17,8 @@ Unlock achievements on Microsoft/Xbox games with ease. This tool is inspired by 
   - [Events Guide](#events-guide)
   - [Usage Guide](#usage-guide)
   - [Future Improvements](#future-improvements)
-  - [Join Our Discord Server](#join-our-discord-server)
+  - [Acknowledgements & Upstream](#acknowledgements--upstream)
   - [License](#license)
-  - [Sponsors](#sponsors)
-    - [ziqnr](#ziqnr)
 
 ## About Xbox Achievement Unlocker
 
@@ -37,18 +30,17 @@ Xbox Achievement Unlocker uses code from memory.dll to extract the user's XAuth 
 
 ## Requirements
 
-- [dotnet 8](https://download.visualstudio.microsoft.com/download/pr/77284554-b8df-4697-9a9e-4c70a8b35f29/6763c16069d1ab8fa2bc506ef0767366/dotnet-runtime-8.0.5-win-x64.exe)
-- [New Xbox app](https://apps.microsoft.com/store/detail/xbox/9MV0B5HZVK9Z)
+- [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [Xbox App for Windows](https://apps.microsoft.com/store/detail/xbox/9MV0B5HZVK9Z)
 
 ## Features
 
 - Extract XAuth from Xbox app or use OAuth to login
 - Obtain a list of games from the user or any selected XUID
 - Unlock Achievements for any Title Managed game
-- Spoof time in any game
-- Automatic updates
-- Automatically spoof time in the currently viewed game
-- Search TA and use the Xbox API to get the titleID for any game with a store page
+- Unlock Event-based achievements with cached telemetry tokens
+- Spoof time and presence in any game
+- Built-in HTTP server for local API automation
 
 ## Screenshots
 
@@ -56,47 +48,20 @@ Coming soon.
 
 ## Events Guide
 
-See [Events](./Doc/Events.md) for details.
+See [Events Guide](./Doc/Events.md) for details on event-based achievement mechanics.
 
-## Usage Guide
+## Acknowledgements & Upstream
 
-See [Discord](https://discord.com/channels/1013602813093359657/1233193528553640017) for comprehensive guides by Xolara.
-
-## Future Improvements
-
-- Stats editor
-- Support for Event based stats
-
-## Join Our Discord Server
-
-Feel free to join our [Discord server][discord-invite] for updates and discussions.
+This project builds on the foundational work created by:
+- **[ItsLogic / Draff](https://github.com/ItsLogic)** — Original creator of Xbox-Achievement-Unlocker
+- **[Fumo-Unlockers](https://github.com/Fumo-Unlockers)** — Community maintenance and event database
+- **[XboxAuthNet](https://github.com/XboxAuthNet)** — Xbox authentication library
+- **[WPF-UI](https://github.com/lepoco/wpfui)** — Modern Fluent UI components
 
 ## License
 
-The UI for this program was built on top of the WPF-UI Fluent template as of [this commit](https://github.com/lepoco/wpfui/tree/c8cd75f6f82414a52a94d2a55fe2a21dd5db83d7) which is MIT licensed. Any and all modifications and/or additions to this template are GNU GPL licensed. You can find a copy of the licenses [here][LICENSE] and [here][MIT-LICENSE].
-This tool uses the XboxAuthNet library which is also MIT licensed
+The UI for this program was built on top of the WPF-UI Fluent template which is MIT licensed. Any and all modifications and/or additions to this template are GNU GPL licensed. You can find a copy of the licenses in [LICENSE][LICENSE] and [LICENSE.MIT][MIT-LICENSE].
+This tool uses the XboxAuthNet library which is also MIT licensed.
 
-## Sponsors
-
-Thanks very much to all of my sponsors. Below are messages included as one of the sponsorship rewards
-
-### ziqnr
-
-"I have brain damage" - [ziqnr](https://github.com/ziqnr) 2024
-
-
-[contributors-badge]: https://img.shields.io/github/contributors/ItsLogic/Xbox-Achievement-Unlocker?style=for-the-badge
-[contributors-url]: https://github.com/ItsLogic/Xbox-Achievement-Unlocker/graphs/contributors
-[forks-badge]: https://img.shields.io/github/forks/ItsLogic/Xbox-Achievement-Unlocker?style=for-the-badge
-[forks-url]: https://github.com/ItsLogic/Xbox-Achievement-Unlocker/network/members
-[stars-badge]: https://img.shields.io/github/stars/ItsLogic/Xbox-Achievement-Unlocker?style=for-the-badge
-[stars-url]: https://github.com/ItsLogic/Xbox-Achievement-Unlocker/stargazers
-[issues-badge]: https://img.shields.io/github/issues/ItsLogic/Xbox-Achievement-Unlocker?style=for-the-badge
-[issues-url]: https://github.com/ItsLogic/Xbox-Achievement-Unlocker/issues
-[release-badge]: https://img.shields.io/github/v/release/ItsLogic/Xbox-Achievement-Unlocker?style=for-the-badge
-[release-url]: https://github.com/ItsLogic/Xbox-Achievement-Unlocker/releases
-[discord-id]: https://img.shields.io/discord/1013602813093359657?logo=discord&style=for-the-badge
-[discord-invite]: https://discord.gg/ugDvSw7cns
-[WPF-Commit]: https://github.com/lepoco/wpfui/tree/c8cd75f6f82414a52a94d2a55fe2a21dd5db83d7
-[LICENSE]:LICENSE
-[MIT-LICENSE]:LICENSE.MIT
+[LICENSE]: LICENSE
+[MIT-LICENSE]: LICENSE.MIT
