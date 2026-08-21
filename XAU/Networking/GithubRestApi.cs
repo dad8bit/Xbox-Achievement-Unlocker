@@ -32,7 +32,7 @@ public class GithubRestApi
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.GitHubRaw);
         var responseString =
-            await _httpClient.GetStringAsync("https://raw.githubusercontent.com/Fumo-Unlockers/Xbox-Achievement-Unlocker/Pre-Release/info.json");
+            await _httpClient.GetStringAsync("https://raw.githubusercontent.com/dad8bit/Xbox-Achievement-Unlocker/Pre-Release/info.json");
         return JsonConvert.DeserializeObject<VersionResponse>(responseString);
     }
 
@@ -41,7 +41,7 @@ public class GithubRestApi
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.GitHubApi);
         var responseString =
-            await _httpClient.GetStringAsync("https://api.github.com/repos/Fumo-Unlockers/Xbox-Achievement-unlocker/releases");
+            await _httpClient.GetStringAsync("https://api.github.com/repos/dad8bit/Xbox-Achievement-Unlocker/releases");
         var allReleases = JArray.Parse(responseString);
         var stableReleases = new JArray(allReleases.Where(r => !(bool)r["prerelease"]));
         return (dynamic)stableReleases;
@@ -51,18 +51,33 @@ public class GithubRestApi
     {
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.GitHubRaw);
-        var responseString = await _httpClient.GetStringAsync("https://raw.githubusercontent.com/Fumo-Unlockers/Xbox-Achievement-Unlocker/Events-Data/meta.json");
+        var responseString = await _httpClient.GetStringAsync("https://raw.githubusercontent.com/dad8bit/Xbox-Achievement-Unlocker/Events-Data/meta.json");
         return JsonConvert.DeserializeObject<EventsUpdateResponse>(responseString);
     }
-
 
     public async Task<GitHubFile?> GetXboxGamesDatabaseInfoAsync()
     {
         SetDefaultHeaders();
         _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.GitHubApi);
-        var responseString = await _httpClient.GetStringAsync("https://api.github.com/repos/Fumo-Unlockers/XboxGames/contents");
-        var files = JsonConvert.DeserializeObject<List<GitHubFile>>(responseString);
-        return files?.FirstOrDefault(f => f.Name.Equals("xbox_games.db", StringComparison.OrdinalIgnoreCase));
+        try
+        {
+            var responseString = await _httpClient.GetStringAsync("https://api.github.com/repos/dad8bit/XboxGames/contents");
+            var files = JsonConvert.DeserializeObject<List<GitHubFile>>(responseString);
+            var match = files?.FirstOrDefault(f => f.Name.Equals("xbox_games.db", StringComparison.OrdinalIgnoreCase));
+            if (match != null) return match;
+        }
+        catch { }
+
+        try
+        {
+            var fallback = await _httpClient.GetStringAsync("https://api.github.com/repos/Fumo-Unlockers/XboxGames/contents");
+            var fallbackFiles = JsonConvert.DeserializeObject<List<GitHubFile>>(fallback);
+            return fallbackFiles?.FirstOrDefault(f => f.Name.Equals("xbox_games.db", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
 }
