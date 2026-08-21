@@ -70,14 +70,8 @@ public class XboxRestAPI
             ? "en-GB"
             : System.Globalization.CultureInfo.CurrentCulture.Name;
 
-    private void SetDefaultHeaders()
-    {
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentXauth);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.AcceptEncoding, HeaderValues.AcceptEncoding);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-    }
+    public static string GetSpoofAuth() =>
+        HomeViewModel.SpoofXAUTH;
 
     public static string SanitizeXauthPublic(string xauth) => SanitizeXauth(xauth);
 
@@ -122,63 +116,52 @@ public class XboxRestAPI
         return trimmed.Substring(startIndex, endIndex - startIndex);
     }
 
-    private void SetHeartbeatHeaders()
+    private HttpRequestMessage CreateRequest(HttpMethod method, string url, string? contractVersion = null, string? host = null)
     {
-        _spooferClient.DefaultRequestHeaders.Clear();
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion3);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentSpoofAuth);
-    }
+        var request = new HttpRequestMessage(method, url);
+        request.Headers.Add(HeaderNames.Authorization, CurrentXauth);
+        request.Headers.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
+        request.Headers.Add(HeaderNames.Accept, HeaderValues.Accept);
 
-    private void SetDefaultSpooferHeaders()
-    {
-        _spooferClient.DefaultRequestHeaders.Clear();
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentSpoofAuth);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptEncoding, HeaderValues.AcceptEncoding);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-    }
+        if (!string.IsNullOrEmpty(contractVersion))
+        {
+            request.Headers.Add(HeaderNames.ContractVersion, contractVersion);
+        }
 
-    private void SetDefaultEventBasedHeaders()
-    {
-        _eventBasedClient.DefaultRequestHeaders.Clear();
-        _eventBasedClient.DefaultRequestHeaders.Add("user-agent", "MSDW");
-        _eventBasedClient.DefaultRequestHeaders.Add("cache-control", "no-cache");
-        _eventBasedClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-        _eventBasedClient.DefaultRequestHeaders.Add(HeaderNames.AcceptEncoding, HeaderValues.AcceptEncoding);
-        _eventBasedClient.DefaultRequestHeaders.Add("reliability-mode", "standard");
-        _eventBasedClient.DefaultRequestHeaders.Add("client-version", "EUTC-Windows-C++-no-10.0.22621.3296.amd64fre.ni_release.220506-1250-no");
-        _eventBasedClient.DefaultRequestHeaders.Add("apikey", "0890af88a9ed4cc886a14f5e174a2827-9de66c5e-f867-43a8-a7b8-e0ddd481cca4-7548,95c1f21d6cb047a09e7b423c1cb2222e-9965f07b-54fa-498e-9727-9e8d24dec39e-7027");
-        _eventBasedClient.DefaultRequestHeaders.Add("Client-Id", "NO_AUTH");
-        _eventBasedClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Telemetry);
-        _eventBasedClient.DefaultRequestHeaders.Add(HeaderNames.Connection, "close");
+        if (!string.IsNullOrEmpty(host))
+        {
+            request.Headers.Add(HeaderNames.Host, host);
+        }
 
-        var authxtoken = Regex.Replace(CurrentXauth, @"XBL3\.0 x=\d+;", "XBL3.0 x=-;");
-        _eventBasedClient.DefaultRequestHeaders.Add("authxtoken", authxtoken);
+        request.Headers.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
+        return request;
     }
 
     public async Task<BasicProfile?> GetBasicProfileAsync()
     {
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Profile);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var httpResponse = await _httpClient.GetAsync(BasicXboxAPIUris.GamertagUrl);
-        httpResponse.EnsureSuccessStatusCode();
-        var response = await httpResponse.Content.ReadAsStringAsync();
-        return !string.IsNullOrWhiteSpace(response) ? JsonConvert.DeserializeObject<BasicProfile>(response) : null;
+        using var request = CreateRequest(HttpMethod.Get, BasicXboxAPIUris.GamertagUrl, HeaderValues.ContractVersion2, Hosts.Profile);
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<BasicProfile>(content);
     }
 
     public async Task<Profile?> GetProfileAsync(string xuid)
     {
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion5);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.PeopleHub);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var httpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid));
-        httpResponse.EnsureSuccessStatusCode();
-        var responseString = await httpResponse.Content.ReadAsStringAsync();
-        return !string.IsNullOrWhiteSpace(responseString) ? JsonConvert.DeserializeObject<Profile>(responseString) : null;
+        var url = string.Format(InterpolatedXboxAPIUrls.ProfileUrl, xuid);
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion5, Hosts.PeopleHub);
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<Profile>(content);
     }
 
     public async Task<GameTitle?> GetGameTitleAsync(string xuid, string titleId)
@@ -188,22 +171,27 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
+        var url = string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid);
+        using var request = CreateRequest(HttpMethod.Post, url, HeaderValues.ContractVersion2);
+
         var gameTitleRequest = new GameTitleRequest
         {
             Pfns = null,
             TitleIds = new List<string> { titleId }
         };
 
-        var gameTitleHttpResponse = await _httpClient.PostAsync(
-            string.Format(InterpolatedXboxAPIUrls.TitleUrl, xuid),
-            new StringContent(JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept));
-        if (!gameTitleHttpResponse.IsSuccessStatusCode)
+        request.Content = new StringContent(
+            JsonConvert.SerializeObject(gameTitleRequest), Encoding.UTF8, HeaderValues.Accept);
+
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
             return null;
 
-        var gameTitleResponse = await gameTitleHttpResponse.Content.ReadAsStringAsync();
-        return !string.IsNullOrWhiteSpace(gameTitleResponse) ? JsonConvert.DeserializeObject<GameTitle>(gameTitleResponse) : null;
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<GameTitle>(content);
     }
 
     public async Task<Gamepass?> GetGamepassMembershipAsync(string xuid)
@@ -213,13 +201,17 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        var gpuHttpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.GamepassMembershipUrl, xuid));
-        if (!gpuHttpResponse.IsSuccessStatusCode)
+        var url = string.Format(InterpolatedXboxAPIUrls.GamepassMembershipUrl, xuid);
+        using var request = CreateRequest(HttpMethod.Get, url);
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
             return null;
 
-        var gpuResponse = await gpuHttpResponse.Content.ReadAsStringAsync();
-        return !string.IsNullOrWhiteSpace(gpuResponse) ? JsonConvert.DeserializeObject<Gamepass>(gpuResponse) : null;
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<Gamepass>(content);
     }
 
     public async Task<TitlesList?> GetGamesListAsync(string xuid)
@@ -229,14 +221,16 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.TitleHub);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var httpResponse = await _httpClient.GetAsync(string.Format(InterpolatedXboxAPIUrls.TitlesUrl, xuid));
-        httpResponse.EnsureSuccessStatusCode();
-        var responseString = await httpResponse.Content.ReadAsStringAsync();
-        return !string.IsNullOrWhiteSpace(responseString) ? JsonConvert.DeserializeObject<TitlesList>(responseString) : null;
+        var url = string.Format(InterpolatedXboxAPIUrls.TitlesUrl, xuid);
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.TitleHub);
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<TitlesList>(content);
     }
 
     public async Task<JObject?> GetGamertagProfileAsync(string gamertag)
@@ -246,15 +240,16 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Profile);
-
-        string url = string.Format(InterpolatedXboxAPIUrls.GamertagSearch, gamertag);
-        var response = await _httpClient.GetAsync(url);
+        var url = string.Format(InterpolatedXboxAPIUrls.GamertagSearch, Uri.EscapeDataString(gamertag));
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion2, Hosts.Profile);
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        return JObject.Parse(jsonResponse);
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JObject.Parse(content);
     }
 
     public async Task<GameStatsResponse?> GetGameStatsAsync(string xuid, string titleId)
@@ -264,39 +259,52 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-
+        using var request = CreateRequest(HttpMethod.Post, BasicXboxAPIUris.UserStatsUrl, HeaderValues.ContractVersion2);
         var stat = new GameStat { TitleId = titleId };
         var gameStatsRequest = new GameStatsRequest
         {
             Xuids = new List<string> { xuid },
             Stats = new List<GameStat> { stat }
         };
-        var httpResponse = await _httpClient.PostAsync(
-            BasicXboxAPIUris.UserStatsUrl,
-            new StringContent(JsonConvert.SerializeObject(gameStatsRequest), Encoding.UTF8, HeaderValues.Accept));
-        var response = await httpResponse.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<GameStatsResponse>(response);
+
+        request.Content = new StringContent(
+            JsonConvert.SerializeObject(gameStatsRequest), Encoding.UTF8, HeaderValues.Accept);
+
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<GameStatsResponse>(content);
     }
 
-    public static string GetSpoofAuth() =>
-        HomeViewModel.SpoofXAUTH;
-
-    private void SetPresenceHeaders()
+    private HttpRequestMessage CreatePresenceRequest(HttpMethod method, string url, string? contractVersion = null)
     {
-        _spooferClient.DefaultRequestHeaders.Clear();
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion3);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Accept, HeaderValues.Accept);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
-        _spooferClient.DefaultRequestHeaders.Add(HeaderNames.Authorization, CurrentSpoofAuth);
+        var request = new HttpRequestMessage(method, url);
+        request.Headers.Add(HeaderNames.Authorization, CurrentSpoofAuth);
+        request.Headers.Add(HeaderNames.AcceptLanguage, CurrentResponseLanguage);
+        request.Headers.Add(HeaderNames.Accept, HeaderValues.Accept);
+
+        if (!string.IsNullOrEmpty(contractVersion))
+        {
+            request.Headers.Add(HeaderNames.ContractVersion, contractVersion);
+        }
+
+        return request;
     }
 
-    private async Task<SpoofResult> PostSpoofAsync(string url, string requestBody, string apiName)
+    private async Task<SpoofResult> PostSpoofAsync(string url, string requestBody, string apiName, string contractVersion = HeaderValues.ContractVersion3)
     {
-        var response = await _spooferClient.PostAsync(
-            url,
-            new StringContent(requestBody, Encoding.UTF8, HeaderValues.Accept));
+        using var request = CreatePresenceRequest(HttpMethod.Post, url, contractVersion);
+        if (!string.IsNullOrEmpty(requestBody))
+        {
+            request.Content = new StringContent(requestBody, Encoding.UTF8, HeaderValues.Accept);
+        }
+
+        var response = await _spooferClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
@@ -331,7 +339,6 @@ public class XboxRestAPI
             return SpoofResult.Fail("Title ID must be numeric.");
         }
 
-        SetHeartbeatHeaders();
         var requestBody = $"{{\"titles\":[{{\"expiration\":600,\"id\":{titleId},\"state\":\"active\",\"sandbox\":\"RETAIL\"}}]}}";
         return await PostSpoofAsync(
             string.Format(InterpolatedXboxAPIUrls.HeartbeatUrl, xuid),
@@ -352,7 +359,6 @@ public class XboxRestAPI
             return SpoofResult.Fail("Title ID must be numeric.");
         }
 
-        SetHeartbeatHeaders();
         var requestBody = $"{{\"titles\":[{{\"expiration\":600,\"id\":{titleId},\"state\":\"active\",\"sandbox\":\"RETAIL\"}}]}}";
         return await PostSpoofAsync(InterpolatedXboxAPIUrls.HeartbeatMeUrl, requestBody, "Heartbeat (me)");
     }
@@ -370,7 +376,6 @@ public class XboxRestAPI
             return SpoofResult.Fail("Title ID must be numeric.");
         }
 
-        SetPresenceHeaders();
         var presenceRequest = new PresenceTitleRequest
         {
             id = titleId
@@ -395,7 +400,6 @@ public class XboxRestAPI
             return SpoofResult.Fail("Title ID must be numeric.");
         }
 
-        SetPresenceHeaders();
         var presenceRequest = new PresenceTitleRequest
         {
             id = titleId
@@ -456,13 +460,21 @@ public class XboxRestAPI
             return;
         }
 
-        SetHeartbeatHeaders();
-        await _spooferClient.DeleteAsync(string.Format(InterpolatedXboxAPIUrls.HeartbeatUrl, xuid));
-        await _spooferClient.DeleteAsync(InterpolatedXboxAPIUrls.HeartbeatMeUrl);
+        try
+        {
+            using var r1 = CreatePresenceRequest(HttpMethod.Delete, string.Format(InterpolatedXboxAPIUrls.HeartbeatUrl, xuid), HeaderValues.ContractVersion3);
+            await _spooferClient.SendAsync(r1);
 
-        SetPresenceHeaders();
-        await _spooferClient.DeleteAsync(string.Format(InterpolatedXboxAPIUrls.PresenceUrl, xuid));
-        await _spooferClient.DeleteAsync(InterpolatedXboxAPIUrls.PresenceMeUrl);
+            using var r2 = CreatePresenceRequest(HttpMethod.Delete, InterpolatedXboxAPIUrls.HeartbeatMeUrl, HeaderValues.ContractVersion3);
+            await _spooferClient.SendAsync(r2);
+
+            using var r3 = CreatePresenceRequest(HttpMethod.Delete, string.Format(InterpolatedXboxAPIUrls.PresenceUrl, xuid), HeaderValues.ContractVersion3);
+            await _spooferClient.SendAsync(r3);
+
+            using var r4 = CreatePresenceRequest(HttpMethod.Delete, InterpolatedXboxAPIUrls.PresenceMeUrl, HeaderValues.ContractVersion3);
+            await _spooferClient.SendAsync(r4);
+        }
+        catch { }
     }
 
     public async Task<AchievementsResponse?> GetAchievementsForTitleAsync(string xuid, string titleId)
@@ -472,12 +484,16 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Achievements);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var responseString = await _httpClient.GetStringAsync(string.Format(InterpolatedXboxAPIUrls.QueryAchievementsUrl, xuid, titleId));
-        return JsonConvert.DeserializeObject<AchievementsResponse>(responseString);
+        var url = string.Format(InterpolatedXboxAPIUrls.QueryAchievementsUrl, xuid, titleId);
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion4, Hosts.Achievements);
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<AchievementsResponse>(content);
     }
 
     public async Task<Xbox360AchievementResponse?> GetAchievementsFor360TitleAsync(string xuid, string titleId)
@@ -487,12 +503,16 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion3);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Achievements);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        var responseString = await _httpClient.GetStringAsync(string.Format(InterpolatedXboxAPIUrls.QueryAchievements360Url, xuid, titleId));
-        return JsonConvert.DeserializeObject<Xbox360AchievementResponse>(responseString);
+        var url = string.Format(InterpolatedXboxAPIUrls.QueryAchievements360Url, xuid, titleId);
+        using var request = CreateRequest(HttpMethod.Get, url, HeaderValues.ContractVersion3, Hosts.Achievements);
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<Xbox360AchievementResponse>(content);
     }
 
     public async Task UnlockTitleBasedAchievementAsync(string serviceConfigId, string titleId, string xuid, string achievementId, bool useFakeSignature = false)
@@ -505,17 +525,6 @@ public class XboxRestAPI
         if (string.IsNullOrWhiteSpace(serviceConfigId) || string.IsNullOrWhiteSpace(titleId) || string.IsNullOrWhiteSpace(xuid) || achievementIds.Count == 0)
         {
             return;
-        }
-
-        SetDefaultHeaders();
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.ContractVersion, HeaderValues.ContractVersion2);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Host, Hosts.Achievements);
-        _httpClient.DefaultRequestHeaders.Add(HeaderNames.Connection, HeaderValues.KeepAlive);
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "XboxServicesAPI/2021.10.20211005.0 c");
-
-        if (useFakeSignature)
-        {
-            _httpClient.DefaultRequestHeaders.Add(HeaderNames.Signature, HeaderValues.Signature);
         }
 
         const int chunkSize = 50;
@@ -532,10 +541,19 @@ public class XboxRestAPI
             };
 
             var unlockBodyStr = JsonConvert.SerializeObject(unlockRequest);
-            var bodyconverted = new StringContent(unlockBodyStr, Encoding.UTF8, HeaderValues.Accept);
+            var url = string.Format(InterpolatedXboxAPIUrls.UpdateAchievementsUrl, xuid, serviceConfigId);
 
-            var response = await _httpClient.PostAsync(
-                string.Format(InterpolatedXboxAPIUrls.UpdateAchievementsUrl, xuid, serviceConfigId), bodyconverted);
+            using var request = CreateRequest(HttpMethod.Post, url, HeaderValues.ContractVersion2, Hosts.Achievements);
+            request.Headers.Add("User-Agent", "XboxServicesAPI/2021.10.20211005.0 c");
+
+            if (useFakeSignature)
+            {
+                request.Headers.Add(HeaderNames.Signature, HeaderValues.Signature);
+            }
+
+            request.Content = new StringContent(unlockBodyStr, Encoding.UTF8, HeaderValues.Accept);
+
+            var response = await _httpClient.SendAsync(request);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw new HttpRequestException($"Failed to unlock achievement(s) for title {titleId} with status code {response.StatusCode}");
@@ -550,9 +568,22 @@ public class XboxRestAPI
             return;
         }
 
-        SetDefaultEventBasedHeaders();
-        _eventBasedClient.DefaultRequestHeaders.Add("tickets", $"\"1\"=\"{eventsToken}\"");
-        var response = await _eventBasedClient.PostAsync(BasicXboxAPIUris.TelemetryUrl, requestBody);
+        var authxtoken = Regex.Replace(CurrentXauth, @"XBL3\.0 x=\d+;", "XBL3.0 x=-;");
+        using var request = new HttpRequestMessage(HttpMethod.Post, BasicXboxAPIUris.TelemetryUrl);
+        request.Headers.Add("user-agent", "MSDW");
+        request.Headers.Add("cache-control", "no-cache");
+        request.Headers.Add(HeaderNames.Accept, HeaderValues.Accept);
+        request.Headers.Add("reliability-mode", "standard");
+        request.Headers.Add("client-version", "EUTC-Windows-C++-no-10.0.22621.3296.amd64fre.ni_release.220506-1250-no");
+        request.Headers.Add("apikey", "0890af88a9ed4cc886a14f5e174a2827-9de66c5e-f867-43a8-a7b8-e0ddd481cca4-7548,95c1f21d6cb047a09e7b423c1cb2222e-9965f07b-54fa-498e-9727-9e8d24dec39e-7027");
+        request.Headers.Add("Client-Id", "NO_AUTH");
+        request.Headers.Add(HeaderNames.Host, Hosts.Telemetry);
+        request.Headers.Add(HeaderNames.Connection, "close");
+        request.Headers.Add("authxtoken", authxtoken);
+        request.Headers.Add("tickets", $"\"1\"=\"{eventsToken}\"");
+        request.Content = requestBody;
+
+        var response = await _eventBasedClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
         _logger.LogInformation("POST {TelemetryUrl} => {StatusCode}", BasicXboxAPIUris.TelemetryUrl, response.StatusCode);
 
@@ -569,15 +600,22 @@ public class XboxRestAPI
             return null;
         }
 
-        SetDefaultHeaders();
+        using var request = CreateRequest(HttpMethod.Post, BasicXboxAPIUris.GamepassCatalogUrl);
         var gamepassProducts = new GamepassProductsRequest
         {
             Products = new List<string> { prodId }
         };
-        var titleIDsHttpResponse = await _httpClient.PostAsync(
-            BasicXboxAPIUris.GamepassCatalogUrl,
-            new StringContent(JsonConvert.SerializeObject(gamepassProducts)));
-        var titleIDsResponse = await titleIDsHttpResponse.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<GamePassProducts>(titleIDsResponse);
+        request.Content = new StringContent(
+            JsonConvert.SerializeObject(gamepassProducts), Encoding.UTF8, HeaderValues.Accept);
+
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        return JsonConvert.DeserializeObject<GamePassProducts>(content);
     }
 }

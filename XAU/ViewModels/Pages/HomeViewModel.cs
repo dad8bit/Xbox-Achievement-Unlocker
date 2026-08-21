@@ -453,8 +453,15 @@ namespace XAU.ViewModels.Pages
                     }
                     else
                     {
-                        var gameTitle = await _xboxRestAPI.GetGameTitleAsync(_sessionService.Xuid, presence.TitleId);
-                        CurrentlyPlaying = gameTitle?.Titles?.FirstOrDefault()?.Name ?? $"Currently Playing: Unknown ({presence.TitleId})";
+                        try
+                        {
+                            var gameTitle = await _xboxRestAPI.GetGameTitleAsync(_sessionService.Xuid, presence.TitleId);
+                            CurrentlyPlaying = gameTitle?.Titles?.FirstOrDefault()?.Name ?? $"Currently Playing: Unknown ({presence.TitleId})";
+                        }
+                        catch
+                        {
+                            CurrentlyPlaying = $"Currently Playing: Unknown ({presence.TitleId})";
+                        }
                     }
 
                     try
