@@ -7,23 +7,26 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="HomePage"
-    d:DataContext="{d:DesignInstance local:HomePage,
-                                     IsDesignTimeCreatable=False}"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
+    d:DataContext="{d:DesignInstance local:HomePage, IsDesignTimeCreatable=False}"
+    d:DesignHeight="750"
+    d:DesignWidth="1100"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     mc:Ignorable="d">
 
+    <Grid Margin="16,10,16,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-    <Grid>
         <!-- Update Notification Banner -->
-        <Border Margin="0,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+        <Border Grid.Row="0" Margin="0,0,0,12" VerticalAlignment="Top" HorizontalAlignment="Stretch"
                 Background="{DynamicResource ControlFillColorDefaultBrush}"
                 BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
                 BorderThickness="1"
-                CornerRadius="8" Padding="12,8"
+                CornerRadius="8" Padding="14,10"
                 Visibility="{Binding ViewModel.IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -33,7 +36,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <ui:SymbolIcon Grid.Column="0" Symbol="ArrowDownload24" Margin="0,0,8,0" Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                <ui:SymbolIcon Grid.Column="0" Symbol="ArrowDownload24" Margin="0,0,10,0" Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
                 <TextBlock Grid.Column="1" Text="{Binding ViewModel.UpdateVersionText}" FontWeight="SemiBold" VerticalAlignment="Center"/>
 
                 <ui:Button Grid.Column="2" Content="Release Notes" Margin="0,0,8,0" Padding="10,4" Appearance="Secondary" Command="{Binding ViewModel.ViewReleaseNotesCommand}"/>
@@ -41,159 +44,156 @@
             </Grid>
         </Border>
 
-        <ui:TextBlock 
-            Text="{Binding ViewModel.Attached}"
-            Foreground="{Binding ViewModel.AttachedColor}"
-        ></ui:TextBlock>
-        <ui:TextBlock 
-            Padding="0, 30, 0, 0"
-            Text="{Binding ViewModel.LoggedIn}"
-            Foreground="{Binding ViewModel.LoggedInColor}"
-        ></ui:TextBlock>
-        <ui:Image
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Width="150"
-            Height="150"
-            Source="{Binding ViewModel.GamerPic, Mode=OneWay}"
-            CornerRadius="75"
-        ></ui:Image>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 170, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.GamerTag, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Padding="0, 170, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.Xuid, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 210, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.GamerScore, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Padding="0, 210, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.ProfileRep, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Padding="0, 210, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.AccountTier, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 250, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.CurrentlyPlaying, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Padding="0, 250, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.ActiveDevice, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 290, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.IsVerified, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Padding="0, 290, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.Location, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Padding="0, 290, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.Tenure, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 330, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.Followers, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Padding="0, 330, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.Following, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Padding="0, 330, 0, 0"
-            FontSize="20"
-            Text="{Binding ViewModel.Gamepass, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 370, 0, 0"
-            FontSize="20"
-            TextWrapping="Wrap"
-            Text="{Binding ViewModel.Bio, Mode=OneWay}"
-        ></ui:TextBlock>
-        <ui:Button
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Padding="17, 5, 17, 5"
-            Content="{Binding ViewModel.LoginText, Mode=OneWay}"
-            Command="{Binding ViewModel.OAuthLoginCommand, Mode=OneWay}"/>
-        <ui:Button
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            Margin="0, 35, 0, 0"
-            Content="Refresh"
-            IsEnabled="{Binding ViewModel.IsLoggedIn, Mode=OneWay}"
-            Command="{Binding ViewModel.RefreshProfileCommand, Mode=OneWay}"/>
-        <ui:TextBlock
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Padding="0, 410, 0, 0"
-            FontSize="20"
-            TextWrapping="Wrap"
-            Text="Badges: "
-        ></ui:TextBlock>
-        <ItemsControl ItemsSource="{Binding ViewModel.Watermarks}"
-        HorizontalAlignment="Left"
-        VerticalAlignment="Top"
-        Padding="0, 440, 0, 0"
-        FontSize="20">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Image Source="{Binding ImageUrl}" Width="128" Height="128" Stretch="Uniform" />
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </Grid>
+        <!-- Scrollable Dashboard Body -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Orientation="Vertical">
 
+                <!-- 1. Hero Gamer Profile Card -->
+                <Border Margin="0,0,0,14" Padding="18,16" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: GamerPic with Accent Border -->
+                        <Border Grid.Column="0" Width="104" Height="104" CornerRadius="52"
+                                BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="3"
+                                Margin="0,0,18,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:Image Source="{Binding ViewModel.GamerPic, Mode=OneWay}"
+                                      Width="98" Height="98" CornerRadius="49" Stretch="UniformToFill"/>
+                        </Border>
+
+                        <!-- Center: Profile Info & Badges -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                                <TextBlock Text="{Binding ViewModel.GamerTag, Mode=OneWay}" FontSize="22" FontWeight="Bold" Margin="0,0,10,0"/>
+                                <Border Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" Margin="0,0,6,0">
+                                    <TextBlock Text="{Binding ViewModel.AccountTier, Mode=OneWay}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                </Border>
+                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ViewModel.Tenure, Mode=OneWay}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </Border>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding ViewModel.Xuid, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="0,0,0,6"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="{Binding ViewModel.Location, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,14,0"/>
+                                <TextBlock Text="{Binding ViewModel.Followers, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,14,0"/>
+                                <TextBlock Text="{Binding ViewModel.Following, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,14,0"/>
+                                <TextBlock Text="{Binding ViewModel.Gamepass, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding ViewModel.Bio, Mode=OneWay}" FontSize="12" FontStyle="Italic"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxWidth="600"/>
+                        </StackPanel>
+
+                        <!-- Right: Gamerscore Card & Action Buttons -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0,0,0">
+                            <!-- Gamerscore Pill -->
+                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="8" Padding="14,8" Margin="0,0,0,10">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="Trophy24" Foreground="#FFD700" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{Binding ViewModel.GamerScore, Mode=OneWay}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}" Margin="0,0,6,0" Padding="10,5"
+                                           IsEnabled="{Binding ViewModel.IsLoggedIn, Mode=OneWay}"
+                                           Command="{Binding ViewModel.RefreshProfileCommand, Mode=OneWay}"/>
+                                <ui:Button Content="{Binding ViewModel.LoginText, Mode=OneWay}" Icon="{ui:SymbolIcon Person24}" Padding="12,5"
+                                           Appearance="Primary"
+                                           Command="{Binding ViewModel.OAuthLoginCommand, Mode=OneWay}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 2. Live System & Engine Status Cards -->
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Card 1: Memory Scanner Attach State -->
+                    <Border Grid.Column="0" Margin="0,0,6,0" Padding="14,12" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <ui:SymbolIcon Symbol="XboxController24" Foreground="{DynamicResource AccentFillColorDefaultBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="Xbox Process State" FontWeight="SemiBold" FontSize="13"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,0,4">
+                                <Ellipse Width="10" Height="10" Fill="{Binding ViewModel.AttachedColor}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{Binding ViewModel.Attached}" FontSize="14" FontWeight="Bold"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ViewModel.ActiveDevice, Mode=OneWay}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Card 2: Active Presence & Spoofing -->
+                    <Border Grid.Column="1" Margin="3,0,3,0" Padding="14,12" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <ui:SymbolIcon Symbol="PlayCircle24" Foreground="#00BFFF" Margin="0,0,6,0"/>
+                                <TextBlock Text="Active Presence" FontWeight="SemiBold" FontSize="13"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ViewModel.CurrentlyPlaying, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,2"/>
+                            <TextBlock Text="{Binding ViewModel.ProfileRep, Mode=OneWay}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Card 3: Session & Events Token Health -->
+                    <Border Grid.Column="2" Margin="6,0,0,0" Padding="14,12" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <ui:SymbolIcon Symbol="ShieldKeyhole24" Foreground="#32CD32" Margin="0,0,6,0"/>
+                                <TextBlock Text="Session &amp; Telemetry Token" FontWeight="SemiBold" FontSize="13"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2,0,4">
+                                <Ellipse Width="10" Height="10" Fill="{Binding ViewModel.LoggedInColor}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{Binding ViewModel.LoggedIn}" FontSize="14" FontWeight="Bold"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ViewModel.IsVerified, Mode=OneWay}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 3. Badges Showcase Gallery -->
+                <ui:CardExpander Margin="0,0,0,14" IsExpanded="True">
+                    <ui:CardExpander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="RibbonStar24" Foreground="#FFD700" Margin="0,0,8,0"/>
+                            <TextBlock Text="Tenure &amp; Launch Badges" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ui:CardExpander.Header>
+
+                    <ItemsControl ItemsSource="{Binding ViewModel.Watermarks}" Margin="0,6,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="6" Padding="6" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8">
+                                    <Image Source="{Binding ImageUrl}" Width="80" Height="80" Stretch="Uniform" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ui:CardExpander>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </Page>
