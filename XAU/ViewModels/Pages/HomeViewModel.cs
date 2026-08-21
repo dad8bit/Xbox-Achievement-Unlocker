@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -12,9 +12,9 @@ using Newtonsoft.Json;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
-using XAU.Services;
+using AchievementForge.Services;
 
-namespace XAU.ViewModels.Pages
+namespace AchievementForge.ViewModels.Pages
 {
     public partial class ImageItem : ObservableObject
     {

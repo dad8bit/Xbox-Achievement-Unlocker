@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -11,10 +11,10 @@ using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Services;
-using XAU.Services;
-using XAU.Views.Pages;
+using AchievementForge.Services;
+using AchievementForge.Views.Pages;
 
-namespace XAU.ViewModels.Pages
+namespace AchievementForge.ViewModels.Pages
 {
     public partial class AchievementsViewModel : ObservableObject, INavigationAware
     {

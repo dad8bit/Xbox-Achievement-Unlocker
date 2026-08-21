@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
-namespace XAU.Services
+namespace AchievementForge.Services
 {
     public class AppUpdateInfo
     {

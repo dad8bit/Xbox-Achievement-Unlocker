@@ -25,8 +25,7 @@ public static class EndpointRoutes
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>XAU API Endpoints</title>
-    <link rel=""icon"" type=""image/x-icon"" href=""https://raw.githubusercontent.com/Fumo-Unlockers/Xbox-Achievement-Unlocker/refs/heads/Main/XAU/cirno.ico"">
+    <title>AchievementForge API Endpoints</title>
     <link href=""https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"" rel=""stylesheet"">
     <script>
         function openEndpoint(baseUrl, inputId) {
@@ -35,7 +34,7 @@ public static class EndpointRoutes
             if (value) {
                 window.open(baseUrl + encodeURIComponent(value), '_blank');
             } else {
-                alert('Oopsie Woopsy Fucky Wucky... Enter a value in the text box.');
+                alert('AchievementForge: Please enter a value in the input field.');
             }
         }
         function openEndpointWithTwoInputs(baseUrl, inputId1, middlePath, inputId2) {
@@ -46,7 +45,7 @@ public static class EndpointRoutes
             if (value1 && value2) {
                 window.open(baseUrl + encodeURIComponent(value1) + middlePath + encodeURIComponent(value2), '_blank');
             } else {
-                alert('Oopsie Woopsy Fucky Wucky... Enter a value in the text box.');
+                alert('AchievementForge: Please enter a value in both input fields.');
             }
         }
     </script>
@@ -59,7 +58,7 @@ public static class EndpointRoutes
 </head>
 <body class=""bg-gray-100 min-h-screen p-8"">
     <div class=""container mx-auto"">
-        <h1 class=""text-4xl font-bold text-center mb-2 text-gray-800"">XAU API Endpoints</h1>
+        <h1 class=""text-4xl font-bold text-center mb-2 text-gray-800"">AchievementForge API Endpoints</h1>
         <p class=""text-center text-red-600 font-medium text-sm mb-6"">
             Warning: These endpoints are still in beta and have not been extensively tested. Use at your own risk!
         </p>

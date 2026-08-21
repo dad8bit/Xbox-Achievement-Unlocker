@@ -1,7 +1,7 @@
-using Wpf.Ui.Controls;
-using XAU.ViewModels.Pages;
+﻿using Wpf.Ui.Controls;
+using AchievementForge.ViewModels.Pages;
 
-namespace XAU.Views.Pages
+namespace AchievementForge.Views.Pages
 {
     /// <summary>
     /// Interaction logic for StatsPage.xaml

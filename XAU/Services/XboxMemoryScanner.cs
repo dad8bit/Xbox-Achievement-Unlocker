@@ -1,7 +1,7 @@
-using Memory;
+﻿using Memory;
 using Microsoft.Extensions.Logging;
 
-namespace XAU.Services;
+namespace AchievementForge.Services;
 
 public class XboxMemoryScanner : IXboxMemoryScanner
 {

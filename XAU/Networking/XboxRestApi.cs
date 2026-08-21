@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -6,9 +6,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using XAU.Services;
-using XAU.ViewModels.Pages;
-using XAU.ViewModels.Windows;
+using AchievementForge.Services;
+using AchievementForge.ViewModels.Pages;
+using AchievementForge.ViewModels.Windows;
 
 public class XboxRestAPI
 {

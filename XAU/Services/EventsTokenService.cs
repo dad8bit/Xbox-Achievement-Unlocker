@@ -1,9 +1,9 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Logging;
-using XAU.Util.Etw;
+using AchievementForge.Util.Etw;
 
-namespace XAU.Services;
+namespace AchievementForge.Services;
 
 public class EventsTokenService : IEventsTokenService
 {

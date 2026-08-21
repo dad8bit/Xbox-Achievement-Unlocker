@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
 using System.Text;
@@ -6,9 +6,9 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using XAU.Util.Etw;
+using AchievementForge.Util.Etw;
 
-namespace XAU.Services
+namespace AchievementForge.Services
 {
     public class EventSnifferService : IEventSnifferService
     {

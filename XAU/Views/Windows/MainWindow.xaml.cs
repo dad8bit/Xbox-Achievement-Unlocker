@@ -1,9 +1,9 @@
-using Wpf.Ui.Contracts;
+﻿using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
-using XAU.Services;
-using XAU.ViewModels.Windows;
+using AchievementForge.Services;
+using AchievementForge.ViewModels.Windows;
 
-namespace XAU.Views.Windows;
+namespace AchievementForge.Views.Windows;
 
 public partial class MainWindow
 {
@@ -34,11 +34,11 @@ public partial class MainWindow
         {
             var settings = settingsService.Current;
             if (!string.IsNullOrEmpty(settings.BackdropType))
-                XAU.ViewModels.Pages.SettingsViewModel.ApplyWindowBackdrop(settings.BackdropType);
+                AchievementForge.ViewModels.Pages.SettingsViewModel.ApplyWindowBackdrop(settings.BackdropType);
             if (!string.IsNullOrEmpty(settings.AccentColor))
-                XAU.ViewModels.Pages.SettingsViewModel.ApplyAccentColor(settings.AccentColor);
+                AchievementForge.ViewModels.Pages.SettingsViewModel.ApplyAccentColor(settings.AccentColor);
             if (!string.IsNullOrEmpty(settings.ThemeMode))
-                XAU.ViewModels.Pages.SettingsViewModel.ApplyThemeMode(settings.ThemeMode);
+                AchievementForge.ViewModels.Pages.SettingsViewModel.ApplyThemeMode(settings.ThemeMode);
         }
         catch { }
     }

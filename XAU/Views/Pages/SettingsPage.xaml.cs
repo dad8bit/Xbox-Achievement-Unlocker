@@ -1,12 +1,12 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
-using XAU.ViewModels.Pages;
+using AchievementForge.ViewModels.Pages;
 
-namespace XAU.Views.Pages
+namespace AchievementForge.Views.Pages
 {
     public partial class SettingsPage : INavigableView<SettingsViewModel>
     {

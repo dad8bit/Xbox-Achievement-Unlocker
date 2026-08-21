@@ -1,4 +1,4 @@
-namespace XAU.Services;
+﻿namespace AchievementForge.Services;
 
 public record AuthTokensResult(
     string XauthToken,

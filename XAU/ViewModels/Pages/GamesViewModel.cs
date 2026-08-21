@@ -1,14 +1,14 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
-using XAU.Services;
-using XAU.Views.Pages;
+using AchievementForge.Services;
+using AchievementForge.Views.Pages;
 
-namespace XAU.ViewModels.Pages
+namespace AchievementForge.ViewModels.Pages
 {
     public partial class GamesViewModel : ObservableObject, INavigationAware, INotifyPropertyChanged
     {

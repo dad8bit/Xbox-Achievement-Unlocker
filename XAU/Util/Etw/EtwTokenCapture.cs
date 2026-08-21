@@ -1,10 +1,10 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using XAU.ViewModels.Pages;
+using AchievementForge.ViewModels.Pages;
 
-namespace XAU.Util.Etw
+namespace AchievementForge.Util.Etw
 {
     static class EtwTokenCapture
     {

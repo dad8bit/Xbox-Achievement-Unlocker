@@ -1,10 +1,10 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Wpf.Ui.Controls;
-using XAU.ViewModels.Pages;
+using AchievementForge.ViewModels.Pages;
 
-namespace XAU.Views.Pages
+namespace AchievementForge.Views.Pages
 {
     /// <summary>
     /// Interaction logic for AchievementsPage.xaml

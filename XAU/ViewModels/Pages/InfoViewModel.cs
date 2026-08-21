@@ -1,6 +1,6 @@
-using Wpf.Ui.Controls;
+﻿using Wpf.Ui.Controls;
 
-namespace XAU.ViewModels.Pages
+namespace AchievementForge.ViewModels.Pages
 {
     public partial class InfoViewModel : ObservableObject, INavigationAware
     {

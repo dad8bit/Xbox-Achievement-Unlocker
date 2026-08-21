@@ -1,6 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
-namespace XAU.Services;
+namespace AchievementForge.Services;
 
 public interface ISettingsService : INotifyPropertyChanged
 {

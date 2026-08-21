@@ -1,9 +1,9 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using XAU.Views.Pages;
-using XAU.Views.Windows;
+using AchievementForge.Views.Pages;
+using AchievementForge.Views.Windows;
 using Application = System.Windows.Application;
-namespace XAU.Services
+namespace AchievementForge.Services
 {
     /// <summary>
     /// Managed host of the application.

@@ -1,16 +1,16 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Services;
-using XAU.Services;
-using XAU.ViewModels.Pages;
-using XAU.ViewModels.Windows;
-using XAU.Views.Pages;
-using XAU.Views.Windows;
+using AchievementForge.Services;
+using AchievementForge.ViewModels.Pages;
+using AchievementForge.ViewModels.Windows;
+using AchievementForge.Views.Pages;
+using AchievementForge.Views.Windows;
 
-namespace XAU;
+namespace AchievementForge;
 
 public partial class App
 {

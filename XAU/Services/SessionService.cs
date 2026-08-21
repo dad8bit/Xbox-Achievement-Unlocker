@@ -1,6 +1,6 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace XAU.Services;
+namespace AchievementForge.Services;
 
 public partial class SessionService : ObservableObject, ISessionService
 {

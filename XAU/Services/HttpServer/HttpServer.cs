@@ -1,11 +1,11 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net;
 using System.Security.Principal;
 using System.Runtime.Versioning;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
-namespace XAU.Services.HttpServer
+namespace AchievementForge.Services.HttpServer
 {
     public sealed class HttpServer : IDisposable
     {

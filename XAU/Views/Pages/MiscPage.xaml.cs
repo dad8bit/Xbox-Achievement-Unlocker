@@ -1,9 +1,9 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Input;
 using Wpf.Ui.Controls;
-using XAU.ViewModels.Pages;
+using AchievementForge.ViewModels.Pages;
 
-namespace XAU.Views.Pages
+namespace AchievementForge.Views.Pages
 {
     public partial class MiscPage : INavigableView<MiscViewModel>
     {

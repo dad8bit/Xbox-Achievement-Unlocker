@@ -1,10 +1,10 @@
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace XAU.Services;
+namespace AchievementForge.Services;
 
 public partial class SettingsService : ObservableObject, ISettingsService
 {

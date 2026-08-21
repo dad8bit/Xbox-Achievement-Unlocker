@@ -1,9 +1,9 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
 using Wpf.Ui.Controls;
 
-namespace XAU.ViewModels.Windows
+namespace AchievementForge.ViewModels.Windows
 {
     public partial class MainWindowViewModel : ObservableObject
     {

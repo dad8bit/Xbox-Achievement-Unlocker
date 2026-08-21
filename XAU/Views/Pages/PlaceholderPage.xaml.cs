@@ -1,6 +1,6 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
-namespace XAU.Views.Pages
+namespace AchievementForge.Views.Pages
 {
     /// <summary>
     /// Interaction logic for PlaceholderPage.xaml

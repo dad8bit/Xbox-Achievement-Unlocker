@@ -1,14 +1,14 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Newtonsoft.Json;
 using Wpf.Ui.Controls;
-using XAU.Services;
-using XAU.Services.HttpServer;
+using AchievementForge.Services;
+using AchievementForge.Services.HttpServer;
 
-namespace XAU.ViewModels.Pages
+namespace AchievementForge.ViewModels.Pages
 {
     public partial class SettingsViewModel : ObservableObject, INavigationAware, IDisposable
     {

@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,7 +10,7 @@ using XboxAuthNet.XboxLive;
 using XboxAuthNet.XboxLive.Requests;
 using XboxAuthNet.XboxLive.Responses;
 
-namespace XAU.Services;
+namespace AchievementForge.Services;
 
 public class OAuthService : IOAuthService
 {
