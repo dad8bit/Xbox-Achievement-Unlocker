@@ -47,12 +47,13 @@ namespace XAU.Services
                 string releaseNotes = json["body"]?.ToString() ?? "";
                 DateTime publishedAt = json["published_at"] != null ? DateTime.Parse(json["published_at"]!.ToString()) : DateTime.Now;
 
-                // Find zip asset
+                // Find zip or exe asset
                 string downloadUrl = "";
                 long assetSize = 0;
                 var assets = json["assets"] as JArray;
                 if (assets != null)
                 {
+                    // Prefer zip package, then exe binary
                     foreach (var asset in assets)
                     {
                         string name = asset["name"]?.ToString() ?? "";
@@ -61,6 +62,20 @@ namespace XAU.Services
                             downloadUrl = asset["browser_download_url"]?.ToString() ?? "";
                             assetSize = asset["size"]?.ToObject<long>() ?? 0;
                             break;
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(downloadUrl))
+                    {
+                        foreach (var asset in assets)
+                        {
+                            string name = asset["name"]?.ToString() ?? "";
+                            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                downloadUrl = asset["browser_download_url"]?.ToString() ?? "";
+                                assetSize = asset["size"]?.ToObject<long>() ?? 0;
+                                break;
+                            }
                         }
                     }
                 }
@@ -103,10 +118,11 @@ namespace XAU.Services
             {
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Clear();
-                client.DefaultRequestHeaders.Add("User-Agent", "XAU-AutoUpdater/1.0");
+                client.DefaultRequestHeaders.Add("User-Agent", "AchievementForge-AutoUpdater/1.0");
 
-                string tempZipPath = Path.Combine(Path.GetTempPath(), $"XAU_Update_{Guid.NewGuid():N}.zip");
-                string extractTempDir = Path.Combine(Path.GetTempPath(), $"XAU_Extracted_{Guid.NewGuid():N}");
+                bool isZip = downloadUrl.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+                string tempFilePath = Path.Combine(Path.GetTempPath(), isZip ? $"AF_Update_{Guid.NewGuid():N}.zip" : $"AF_Update_{Guid.NewGuid():N}.exe");
+                string extractTempDir = Path.Combine(Path.GetTempPath(), $"AF_Extracted_{Guid.NewGuid():N}");
 
                 using (var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
                 {
@@ -114,7 +130,7 @@ namespace XAU.Services
                     var totalBytes = response.Content.Headers.ContentLength ?? -1L;
 
                     using (var stream = await response.Content.ReadAsStreamAsync())
-                    using (var fs = new FileStream(tempZipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    using (var fs = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
                         byte[] buffer = new byte[81920];
                         long totalRead = 0;
@@ -131,27 +147,43 @@ namespace XAU.Services
                     }
                 }
 
-                // Extract downloaded zip
-                Directory.CreateDirectory(extractTempDir);
-                ZipFile.ExtractToDirectory(tempZipPath, extractTempDir, overwriteFiles: true);
-
-                // Find XAU installation directory & exe
+                // Find installation directory & exe
                 string appDir = AppDomain.CurrentDomain.BaseDirectory;
                 string exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? Path.Combine(appDir, "AF.exe");
                 int currentPid = Process.GetCurrentProcess().Id;
 
-                // Create update batch script
-                string batchScript = Path.Combine(Path.GetTempPath(), $"xau_apply_update_{Guid.NewGuid():N}.bat");
-                var scriptContent = $@"@echo off
+                string batchScript = Path.Combine(Path.GetTempPath(), $"af_apply_update_{Guid.NewGuid():N}.bat");
+                string scriptContent;
+
+                if (isZip)
+                {
+                    Directory.CreateDirectory(extractTempDir);
+                    ZipFile.ExtractToDirectory(tempFilePath, extractTempDir, overwriteFiles: true);
+
+                    scriptContent = $@"@echo off
 timeout /t 2 /nobreak >nul
 taskkill /F /PID {currentPid} >nul 2>&1
 timeout /t 1 /nobreak >nul
 xcopy ""{extractTempDir}\*"" ""{appDir}"" /E /H /Y /Q >nul 2>&1
 start """" ""{exePath}""
-del ""{tempZipPath}"" >nul 2>&1
+del ""{tempFilePath}"" >nul 2>&1
 rmdir /S /Q ""{extractTempDir}"" >nul 2>&1
 (goto) 2>nul & del ""%~f0""
 ";
+                }
+                else
+                {
+                    scriptContent = $@"@echo off
+timeout /t 2 /nobreak >nul
+taskkill /F /PID {currentPid} >nul 2>&1
+timeout /t 1 /nobreak >nul
+copy /Y ""{tempFilePath}"" ""{exePath}"" >nul 2>&1
+start """" ""{exePath}""
+del ""{tempFilePath}"" >nul 2>&1
+(goto) 2>nul & del ""%~f0""
+";
+                }
+
                 await File.WriteAllTextAsync(batchScript, scriptContent);
 
                 var psi = new ProcessStartInfo
