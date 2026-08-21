@@ -63,11 +63,11 @@ namespace XAU.Views.Pages
             }
         }
 
-        private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        private void GamesPage_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (sender is ScrollViewer scrollViewer)
+            if (GamesScrollViewer != null)
             {
-                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - (e.Delta * 0.75));
+                GamesScrollViewer.ScrollToVerticalOffset(GamesScrollViewer.VerticalOffset - (e.Delta * 0.75));
                 e.Handled = true;
             }
         }

@@ -14,7 +14,7 @@
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       mc:Ignorable="d">
 
-    <Grid Margin="16,10,16,16">
+    <Grid Margin="16,10,16,16" Background="Transparent" PreviewMouseWheel="GamesPage_OnPreviewMouseWheel">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="{Binding ViewModel.GamesListHeight}"/>
@@ -127,11 +127,11 @@
                       VerticalScrollBarVisibility="Auto" 
                       HorizontalScrollBarVisibility="Disabled"
                       CanContentScroll="False"
-                      PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
-            <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}">
+                      Background="Transparent">
+            <ItemsControl ItemsSource="{Binding ViewModel.GamesPaged}" Background="Transparent">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal"/>
+                        <WrapPanel Orientation="Horizontal" Background="Transparent"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
