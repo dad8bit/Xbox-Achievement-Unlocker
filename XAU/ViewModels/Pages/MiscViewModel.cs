@@ -68,7 +68,7 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private string _gameGamepass = "Gamepass: ";
         [ObservableProperty] private string _gameDevices = "Devices: ";
         [ObservableProperty] private string _gameGamerscore = "Gamerscore: ?/?";
-        [ObservableProperty] private string? _gameImage = "pack://application:,,,/Assets/cirno.png";
+        [ObservableProperty] private string? _gameImage = "pack://application:,,,/Assets/app_icon.png";
         [ObservableProperty] private string _gameTime = "Time Played: ";
         [ObservableProperty] private bool _isInitialized = false;
         [ObservableProperty] private string _currentSpoofingID = "";
@@ -114,7 +114,7 @@ namespace XAU.ViewModels.Pages
                 GameGamepass = "Gamepass: ";
                 GameDevices = "Devices: ";
                 GameGamerscore = "Gamerscore: ?/?";
-                GameImage = "pack://application:,,,/Assets/cirno.png";
+                GameImage = "pack://application:,,,/Assets/app_icon.png";
                 GameTime = "Time Played: ";
                 _sessionService.SpoofingStatus = 0;
                 await _xboxRestAPI.StopHeartbeatAsync(_sessionService.Xuid);
@@ -161,7 +161,7 @@ namespace XAU.ViewModels.Pages
             try
             {
                 GameName = "Name: " + GameInfoResponse.Titles[0].Name;
-                GameImage = !string.IsNullOrEmpty(GameInfoResponse.Titles[0].DisplayImage.ToString()) ? GameInfoResponse.Titles[0].DisplayImage.ToString() : "pack://application:,,,/Assets/cirno.png";
+                GameImage = !string.IsNullOrEmpty(GameInfoResponse.Titles[0].DisplayImage.ToString()) ? GameInfoResponse.Titles[0].DisplayImage.ToString() : "pack://application:,,,/Assets/app_icon.png";
                 GameTitleID = "Title ID: " + GameInfoResponse.Titles[0].TitleId;
                 GamePFN = "PFN: " + GameInfoResponse.Titles[0].Pfn;
                 GameType = "Type: " + GameInfoResponse.Titles[0].Type;
@@ -403,7 +403,7 @@ namespace XAU.ViewModels.Pages
         #region GamertagSearch
         [ObservableProperty] private string _gamertag = "";
         [ObservableProperty] private string _gamertagName = "Gamertag:";
-        [ObservableProperty] private string _gamertagImage = "pack://application:,,,/Assets/cirno.png";
+        [ObservableProperty] private string _gamertagImage = "pack://application:,,,/Assets/app_icon.png";
         [ObservableProperty] private string _gamertagScore = "Gamerscore: ";
         [ObservableProperty] private string _gamertagXuid;
         [ObservableProperty] private bool _excludeZeroGamerscoreGames;

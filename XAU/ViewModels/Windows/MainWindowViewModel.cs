@@ -30,8 +30,8 @@ namespace XAU.ViewModels.Windows
             ContentDialogResult result = await _contentDialogService.ShowSimpleDialogAsync(
                 new SimpleContentDialogCreateOptions()
                 {
-                    Title = "Oopsie Woopsy Fucky Wucky",
-                    Content = "Something has went terribly wrong.\nPress the Copy Error button and post the message as a github issue or in the support channel on discord",
+                    Title = "AchievementForge - Error",
+                    Content = "An unexpected error occurred.\nPress the Copy Error button to copy diagnostics to clipboard for support.",
                     PrimaryButtonText = "Copy Error",
                     CloseButtonText = "Close",
                 });
@@ -44,7 +44,7 @@ namespace XAU.ViewModels.Windows
             }
         }
         [ObservableProperty]
-        private string _applicationTitle = "Xbox Achievement Unlocker";
+        private string _applicationTitle = "AchievementForge";
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()

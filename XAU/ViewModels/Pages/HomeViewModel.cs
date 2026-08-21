@@ -80,7 +80,7 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private string _loggedIn = "Not Logged In";
         [ObservableProperty] private Brush _loggedInColor = new SolidColorBrush(Colors.Red);
 
-        [ObservableProperty] private string? _gamerPic = "pack://application:,,,/Assets/cirno.png";
+        [ObservableProperty] private string? _gamerPic = "pack://application:,,,/Assets/app_icon.png";
         [ObservableProperty] private string? _gamerTag = "Gamertag: Unknown   ";
         [ObservableProperty] private string? _xuid = "XUID: Unknown";
         [ObservableProperty] private string? _gamerScore = "Gamerscore: Unknown";
@@ -446,7 +446,7 @@ namespace XAU.ViewModels.Pages
                         {
                             GamerTag = "Gamertag: Hidden";
                             Xuid = "XUID: Hidden";
-                            GamerPic = "pack://application:,,,/Assets/cirno.png";
+                            GamerPic = "pack://application:,,,/Assets/app_icon.png";
                             GamerScore = "Gamerscore: Hidden";
                             ProfileRep = "Reputation: Hidden";
                             AccountTier = "Tier: Hidden";
@@ -523,7 +523,7 @@ namespace XAU.ViewModels.Pages
                 {
                     GamerTag = "Gamertag: Hidden";
                     Xuid = "XUID: Hidden";
-                    GamerPic = "pack://application:,,,/Assets/cirno.png";
+                    GamerPic = "pack://application:,,,/Assets/app_icon.png";
                     GamerScore = "Gamerscore: Hidden";
                     ProfileRep = "Reputation: Hidden";
                     AccountTier = "Tier: Hidden";
@@ -639,7 +639,7 @@ namespace XAU.ViewModels.Pages
             _grabbedProfile = false;
             GamerTag = "Gamertag: Unknown   ";
             Xuid = "XUID: Unknown";
-            GamerPic = "pack://application:,,,/Assets/cirno.png";
+            GamerPic = "pack://application:,,,/Assets/app_icon.png";
             GamerScore = "Gamerscore: Unknown";
             ProfileRep = "Reputation: Unknown";
             AccountTier = "Tier: Unknown";

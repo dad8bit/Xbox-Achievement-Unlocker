@@ -252,7 +252,7 @@ namespace XAU.ViewModels.Pages
                 var totalAchievements = title.Achievement?.TotalAchievements ?? 0;
                 var progress = title.Achievement?.ProgressPercentage ?? 0;
 
-                var displayImage = title.DisplayImage ?? "pack://application:,,,/Assets/cirno.png";
+                var displayImage = title.DisplayImage ?? "pack://application:,,,/Assets/app_icon.png";
 
                 string achText = totalAchievements > 0
                     ? $"{currentAchievements}/{totalAchievements}"

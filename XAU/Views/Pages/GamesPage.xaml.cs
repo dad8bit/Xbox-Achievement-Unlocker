@@ -59,7 +59,7 @@ namespace XAU.Views.Pages
         {
             if (sender is Wpf.Ui.Controls.Image uiImage)
             {
-                uiImage.Source = new BitmapImage(new Uri("pack://application:,,,/Assets/cirno.png"));
+                uiImage.Source = new BitmapImage(new Uri("pack://application:,,,/Assets/app_icon.png"));
             }
         }
     }

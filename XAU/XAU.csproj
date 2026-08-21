@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>cirno.ico</ApplicationIcon>
+    <ApplicationIcon>app_icon.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
@@ -14,12 +14,15 @@
     <Version>26.06.14</Version>
     <AssemblyVersion>26.6.14.0</AssemblyVersion>
     <FileVersion>26.6.14.0</FileVersion>
-    <Copyright>Made By Draff ;)</Copyright>
+    <Product>AchievementForge</Product>
+    <Title>AchievementForge</Title>
+    <Description>Xbox Achievement Unlocker &amp; Telemetry Suite</Description>
+    <Copyright>AchievementForge</Copyright>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="cirno.ico" />
+    <Content Include="app_icon.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,11 +38,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Assets\app_icon.png" />
+    <None Remove="Assets\app_icon.ico" />
     <None Remove="Assets\cirno.png" />
     <None Remove="Assets\G.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\app_icon.png" />
+    <Resource Include="Assets\app_icon.ico" />
     <Resource Include="Assets\cirno.png" />
     <Resource Include="Assets\G.png" />
   </ItemGroup>
