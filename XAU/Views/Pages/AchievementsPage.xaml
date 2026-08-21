@@ -192,6 +192,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
@@ -204,14 +205,15 @@
                         <ComboBox ItemsSource="{Binding ViewModel.DelayPresetOptions}" SelectedIndex="{Binding ViewModel.DelayPresetIndex, Mode=TwoWay}" Width="150" Padding="8,3"/>
                     </StackPanel>
 
-                    <CheckBox Grid.Column="3" Content="Auto-Spoof Presence" IsChecked="{Binding ViewModel.AutoSpoofDuringBatch, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <CheckBox Grid.Column="3" Content="Auto-Spoof" IsChecked="{Binding ViewModel.AutoSpoofDuringBatch, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <CheckBox Grid.Column="4" Content="Reveal Secrets" IsChecked="{Binding ViewModel.RevealSecretDetails, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
-                    <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center" Margin="6,0,12,0" Visibility="{Binding ViewModel.BatchRunningVisibility}">
+                    <StackPanel Grid.Column="5" Orientation="Vertical" VerticalAlignment="Center" Margin="6,0,12,0" Visibility="{Binding ViewModel.BatchRunningVisibility}">
                         <TextBlock Text="{Binding ViewModel.BatchStatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                         <ProgressBar Value="{Binding ViewModel.BatchProgress}" Height="6" Margin="0,3,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right">
                         <ui:Button Content="Batch Unlock" Appearance="Primary" Padding="12,5"
                                    Command="{Binding ViewModel.StartBatchUnlockCommand}"
                                    Visibility="{Binding ViewModel.BatchNotRunningVisibility}"
@@ -238,10 +240,25 @@
                       CanUserResizeRows="False"
                       CanUserSortColumns="True"
             >
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu>
+                                    <MenuItem Header="Find Guide on TrueAchievements" Command="{Binding DataContext.ViewModel.OpenTrueAchievementsGuideCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Icon="{ui:SymbolIcon Globe24}"/>
+                                    <MenuItem Header="Search Solution on Google" Command="{Binding DataContext.ViewModel.OpenGoogleGuideCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Icon="{ui:SymbolIcon Search24}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Copy Achievement Name" Command="{Binding DataContext.ViewModel.CopyAchievementNameCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Icon="{ui:SymbolIcon Copy24}"/>
+                                    <MenuItem Header="Copy Description" Command="{Binding DataContext.ViewModel.CopyAchievementDescriptionCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Icon="{ui:SymbolIcon DocumentCopy24}"/>
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="0.06*" IsReadOnly="False"/>
+                    <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="0.05*" IsReadOnly="False"/>
                     <DataGridTextColumn Header="ID" Binding="{Binding ID}" Width="0.05*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Achievement" Binding="{Binding Name}" Width="0.2*" IsReadOnly="True">
+                    <DataGridTextColumn Header="Achievement" Binding="{Binding Name}" Width="0.18*" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextWrapping" Value="Wrap" />
@@ -255,13 +272,23 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Secret" Binding="{Binding IsSecret}"  Width="0.08*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Date Unlocked" Binding="{Binding DateUnlocked}" Width="0.24*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="G's" Binding="{Binding Gamerscore}" Width="0.06*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Percentage" Binding="{Binding RarityPercentage}" Width="0.11*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Rarity" Binding="{Binding RarityCategory}" Width="0.10*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="State" Binding="{Binding ProgressState}" Width="0.10*" IsReadOnly="True"/>
-                    <DataGridTemplateColumn Header="Unlock" Width="0.12*">
+                    <DataGridTextColumn Header="Secret" Binding="{Binding IsSecret}"  Width="0.06*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Date Unlocked" Binding="{Binding DateUnlocked}" Width="0.20*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="G's" Binding="{Binding Gamerscore}" Width="0.05*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Percentage" Binding="{Binding RarityPercentage}" Width="0.09*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Rarity" Binding="{Binding RarityCategory}" Width="0.08*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="State" Binding="{Binding ProgressState}" Width="0.08*" IsReadOnly="True"/>
+                    <DataGridTemplateColumn Header="Guide" Width="0.07*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ui:Button Margin="2" Padding="6,4" ToolTip="Find TrueAchievements Guide"
+                                           Command="{Binding DataContext.ViewModel.OpenTrueAchievementsGuideCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                           CommandParameter="{Binding}"
+                                           Icon="{ui:SymbolIcon Globe24}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Unlock" Width="0.10*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Margin="5,5,5,5" Click="UnlockButton" Tag="{Binding Index, Mode=TwoWay}"

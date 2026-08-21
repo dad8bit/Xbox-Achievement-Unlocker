@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
@@ -6,9 +7,9 @@ using System.Text;
 using System.Windows.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Wpf.Ui.Controls;
 using Wpf.Ui.Common;
 using Wpf.Ui.Contracts;
+using Wpf.Ui.Controls;
 using Wpf.Ui.Services;
 using XAU.Services;
 using XAU.Views.Pages;
@@ -110,6 +111,18 @@ namespace XAU.ViewModels.Pages
         [ObservableProperty] private int _delayPresetIndex = 1;
         [ObservableProperty] private bool _autoSpoofDuringBatch = true;
         [ObservableProperty] private int _selectedCount = 0;
+        [ObservableProperty] private bool _revealSecretDetails = true;
+
+        partial void OnRevealSecretDetailsChanged(bool value)
+        {
+            foreach (var a in DGAchievements)
+            {
+                if (a.IsSecret)
+                {
+                    a.Description = value ? (!string.IsNullOrEmpty(a.FullDescription) ? a.FullDescription : a.LockedDescription) : (a.LockedDescription ?? a.FullDescription);
+                }
+            }
+        }
 
         public Visibility BatchRunningVisibility => IsBatchRunning ? Visibility.Visible : Visibility.Collapsed;
         public Visibility BatchNotRunningVisibility => IsBatchRunning ? Visibility.Collapsed : Visibility.Visible;
@@ -122,7 +135,9 @@ namespace XAU.ViewModels.Pages
             public int Index { get; set; }
             public int ID { get; set; }
             public string? Name { get; set; }
-            public string? Description { get; set; }
+            [ObservableProperty] private string? _description;
+            public string? FullDescription { get; set; }
+            public string? LockedDescription { get; set; }
             public bool IsSecret { get; set; }
             [ObservableProperty] private DateTime _dateUnlocked;
             public int Gamerscore { get; set; }
@@ -449,7 +464,9 @@ namespace XAU.ViewModels.Pages
                         Index = Achievements.IndexOf(achievement),
                         ID = int.Parse(achievement.id),
                         Name = achievement.name,
-                        Description = achievement.description,
+                        FullDescription = achievement.description,
+                        LockedDescription = achievement.lockedDescription,
+                        Description = RevealSecretDetails ? (!string.IsNullOrEmpty(achievement.description) ? achievement.description : achievement.lockedDescription) : (achievement.lockedDescription ?? achievement.description),
                         IsSecret = achievement.isSecret,
                         DateUnlocked = DateTime.Parse(achievement.progression.timeUnlocked),
                         Gamerscore = gamerscore,
@@ -508,7 +525,9 @@ namespace XAU.ViewModels.Pages
                         Index = Achievements.IndexOf(achievement),
                         ID = int.Parse(achievement.id),
                         Name = achievement.name,
-                        Description = achievement.description,
+                        FullDescription = achievement.description,
+                        LockedDescription = achievement.lockedDescription,
+                        Description = RevealSecretDetails ? (!string.IsNullOrEmpty(achievement.description) ? achievement.description : achievement.lockedDescription) : (achievement.lockedDescription ?? achievement.description),
                         IsSecret = achievement.isSecret,
                         DateUnlocked = DateTime.Parse(achievement.progression.timeUnlocked),
                         Gamerscore = gamerscore,
@@ -1044,5 +1063,73 @@ namespace XAU.ViewModels.Pages
                 _snackbarService.Show("Error", "An error occurred while filtering achievements.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
             }
         }
+
+        #region Guides & Clipboard Commands
+
+        [RelayCommand]
+        public void OpenTrueAchievementsGuide(DGAchievement? achievement)
+        {
+            if (achievement == null) return;
+            string game = GameName ?? "";
+            string ach = achievement.Name ?? "";
+            string query = Uri.EscapeDataString($"{game} {ach}");
+            string url = $"https://www.trueachievements.com/searchresults.aspx?search={query}";
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Show("Error", "Could not open browser: " + ex.Message, ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+            }
+        }
+
+        [RelayCommand]
+        public void OpenGoogleGuide(DGAchievement? achievement)
+        {
+            if (achievement == null) return;
+            string game = GameName ?? "";
+            string ach = achievement.Name ?? "";
+            string query = Uri.EscapeDataString($"{game} {ach} achievement guide solution");
+            string url = $"https://www.google.com/search?q={query}";
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Show("Error", "Could not open browser: " + ex.Message, ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+            }
+        }
+
+        [RelayCommand]
+        public void CopyAchievementName(DGAchievement? achievement)
+        {
+            if (achievement?.Name != null)
+            {
+                Clipboard.SetText(achievement.Name);
+                _snackbarService.Show("Copied", $"Copied '{achievement.Name}'", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Copy24), _snackbarDuration);
+            }
+        }
+
+        [RelayCommand]
+        public void CopyAchievementDescription(DGAchievement? achievement)
+        {
+            if (achievement?.Description != null)
+            {
+                Clipboard.SetText(achievement.Description);
+                _snackbarService.Show("Copied", "Description copied to clipboard", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Copy24), _snackbarDuration);
+            }
+        }
+
+        #endregion
     }
 }
