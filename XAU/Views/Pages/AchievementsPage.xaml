@@ -178,52 +178,100 @@
                 Command="{Binding ViewModel.RefreshAchievementsCommand}"
             />
         </Grid>
-        <DataGrid Grid.Row="1"  
-                  VerticalScrollBarVisibility="Visible" 
-                  HorizontalScrollBarVisibility="Visible"
-                  Margin="0,5,0,5" 
-                  AutoGenerateColumns="False"  
-                  ItemsSource="{Binding ViewModel.DGAchievements}" 
-                  IsReadOnly="True"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  CanUserReorderColumns="False"
-                  CanUserResizeColumns="True"
-                  CanUserResizeRows="False"
-                  CanUserSortColumns="True"
-        >
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding ID}" Width="0.05*" />
-                <DataGridTextColumn Header="Achievement" Binding="{Binding Name}" Width="0.2*" >
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-                <DataGridTextColumn Header="Description" MaxWidth="300" Binding="{Binding Description}" Width="0.25*">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-                <DataGridTextColumn Header="Secret" Binding="{Binding IsSecret}"  Width="0.1*"/>
-                <DataGridTextColumn Header="Date Unlocked" Binding="{Binding DateUnlocked}" Width="0.27*"/>
-                <DataGridTextColumn Header="G's" Binding="{Binding Gamerscore}" Width="0.06*"/>
-                <DataGridTextColumn Header="Percentage" Binding="{Binding RarityPercentage}" Width="0.13*"/>
-                <DataGridTextColumn Header="Rarity" Binding="{Binding RarityCategory}" Width="0.11*"/>
-                <DataGridTextColumn Header="State" Binding="{Binding ProgressState}" Width="0.12*"/>
-                <DataGridTemplateColumn Header="Unlock" Width="0.13*">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Margin="5,5,5,5" Click="UnlockButton" Tag="{Binding Index, Mode=TwoWay}"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                    IsEnabled="{Binding IsUnlockable}">Unlock</Button>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="1" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Batch Control Bar -->
+            <Border Grid.Row="0" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Button Grid.Column="0" Content="Select Locked" Margin="0,0,6,0" Padding="8,4" Command="{Binding ViewModel.SelectAllLockedCommand}" Icon="{ui:SymbolIcon CheckmarkCircle24}"/>
+                    <ui:Button Grid.Column="1" Content="Clear Selection" Margin="0,0,12,0" Padding="8,4" Command="{Binding ViewModel.DeselectAllCommand}"/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <Label Content="Safety Delay:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox ItemsSource="{Binding ViewModel.DelayPresetOptions}" SelectedIndex="{Binding ViewModel.DelayPresetIndex, Mode=TwoWay}" Width="150" Padding="8,3"/>
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="3" Content="Auto-Spoof Presence" IsChecked="{Binding ViewModel.AutoSpoofDuringBatch, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                    <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center" Margin="6,0,12,0" Visibility="{Binding ViewModel.BatchRunningVisibility}">
+                        <TextBlock Text="{Binding ViewModel.BatchStatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <ProgressBar Value="{Binding ViewModel.BatchProgress}" Height="6" Margin="0,3,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <ui:Button Content="Batch Unlock" Appearance="Primary" Padding="12,5"
+                                   Command="{Binding ViewModel.StartBatchUnlockCommand}"
+                                   Visibility="{Binding ViewModel.BatchNotRunningVisibility}"
+                                   Icon="{ui:SymbolIcon Play24}"/>
+                        <ui:Button Content="Cancel Batch" Appearance="Danger" Padding="12,5"
+                                   Command="{Binding ViewModel.CancelBatchUnlockCommand}"
+                                   Visibility="{Binding ViewModel.BatchRunningVisibility}"
+                                   Icon="{ui:SymbolIcon Dismiss24}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <DataGrid Grid.Row="1"  
+                      VerticalScrollBarVisibility="Visible" 
+                      HorizontalScrollBarVisibility="Visible"
+                      Margin="0,0,0,5" 
+                      AutoGenerateColumns="False"  
+                      ItemsSource="{Binding ViewModel.DGAchievements}" 
+                      IsReadOnly="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserReorderColumns="False"
+                      CanUserResizeColumns="True"
+                      CanUserResizeRows="False"
+                      CanUserSortColumns="True"
+            >
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="0.06*" IsReadOnly="False"/>
+                    <DataGridTextColumn Header="ID" Binding="{Binding ID}" Width="0.05*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Achievement" Binding="{Binding Name}" Width="0.2*" IsReadOnly="True">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Description" MaxWidth="300" Binding="{Binding Description}" Width="0.25*" IsReadOnly="True">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Secret" Binding="{Binding IsSecret}"  Width="0.08*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Date Unlocked" Binding="{Binding DateUnlocked}" Width="0.24*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="G's" Binding="{Binding Gamerscore}" Width="0.06*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Percentage" Binding="{Binding RarityPercentage}" Width="0.11*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Rarity" Binding="{Binding RarityCategory}" Width="0.10*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="State" Binding="{Binding ProgressState}" Width="0.10*" IsReadOnly="True"/>
+                    <DataGridTemplateColumn Header="Unlock" Width="0.12*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Margin="5,5,5,5" Click="UnlockButton" Tag="{Binding Index, Mode=TwoWay}"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                        IsEnabled="{Binding IsUnlockable}">Unlock</Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Page>

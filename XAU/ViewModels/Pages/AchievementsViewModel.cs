@@ -96,19 +96,40 @@ namespace XAU.ViewModels.Pages
             s_instance = this;
         }
 
-        public class DGAchievement
+        // Batch Unlocker properties
+        [ObservableProperty] private bool _isBatchRunning = false;
+        [ObservableProperty] private double _batchProgress = 0;
+        [ObservableProperty] private string _batchStatusText = "";
+        [ObservableProperty] private List<string> _delayPresetOptions = new List<string>
         {
+            "Fast (1-3s)",
+            "Realistic (15-45s)",
+            "Extended (2-5m)",
+            "Instant (No Delay)"
+        };
+        [ObservableProperty] private int _delayPresetIndex = 1;
+        [ObservableProperty] private bool _autoSpoofDuringBatch = true;
+        [ObservableProperty] private int _selectedCount = 0;
+
+        public Visibility BatchRunningVisibility => IsBatchRunning ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility BatchNotRunningVisibility => IsBatchRunning ? Visibility.Collapsed : Visibility.Visible;
+
+        private CancellationTokenSource? _batchCts;
+
+        public partial class DGAchievement : ObservableObject
+        {
+            [ObservableProperty] private bool _isSelected;
             public int Index { get; set; }
             public int ID { get; set; }
             public string? Name { get; set; }
             public string? Description { get; set; }
             public bool IsSecret { get; set; }
-            public DateTime DateUnlocked { get; set; }
+            [ObservableProperty] private DateTime _dateUnlocked;
             public int Gamerscore { get; set; }
             public float RarityPercentage { get; set; }
             public string? RarityCategory { get; set; }
-            public string? ProgressState { get; set; }
-            public bool IsUnlockable { get; set; }
+            [ObservableProperty] private string? _progressState;
+            [ObservableProperty] private bool _isUnlockable;
         }
         public async void OnNavigatedTo()
         {
@@ -549,134 +570,267 @@ namespace XAU.ViewModels.Pages
                 IsUnlockAllEnabled = false;
         }
 
-        public async void UnlockAchievement(int AchievementIndex)
+        [RelayCommand]
+        public void SelectAllLocked()
+        {
+            foreach (var a in DGAchievements)
+            {
+                if (a.ProgressState != StringConstants.Achieved && a.IsUnlockable)
+                {
+                    a.IsSelected = true;
+                }
+            }
+            UpdateSelectedCount();
+        }
+
+        [RelayCommand]
+        public void DeselectAll()
+        {
+            foreach (var a in DGAchievements)
+            {
+                a.IsSelected = false;
+            }
+            UpdateSelectedCount();
+        }
+
+        public void UpdateSelectedCount()
+        {
+            SelectedCount = DGAchievements.Count(a => a.IsSelected);
+        }
+
+        public async Task<bool> PerformUnlockAchievementAsync(DGAchievement achievement, bool showIndividualSnackbar = true)
         {
             if (!IsEventBased)
             {
                 try
                 {
-                    await _xboxRestAPI.UnlockTitleBasedAchievementAsync(AchievementResponse.achievements[0].serviceConfigId, AchievementResponse.achievements[0].titleAssociations[0].id, _sessionService.Xuid, DGAchievements[AchievementIndex].ID.ToString(), _settingsService.Current.FakeSignatureEnabled);
+                    var scid = AchievementResponse.achievements.FirstOrDefault()?.serviceConfigId ?? "";
+                    var tid = AchievementResponse.achievements.FirstOrDefault()?.titleAssociations?.FirstOrDefault()?.id ?? TitleIDOverride;
+                    await _xboxRestAPI.UnlockTitleBasedAchievementAsync(scid, tid, _sessionService.Xuid, achievement.ID.ToString(), _settingsService.Current.FakeSignatureEnabled);
 
-                    _snackbarService.Show("Achievement Unlocked", $"{DGAchievements[AchievementIndex].Name} has been unlocked",
-                        ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
-                    DGAchievements[AchievementIndex].IsUnlockable = false;
-                    DGAchievements[AchievementIndex].ProgressState = StringConstants.Achieved;
-                    DGAchievements[AchievementIndex].DateUnlocked = DateTime.Now;
+                    achievement.IsUnlockable = false;
+                    achievement.ProgressState = StringConstants.Achieved;
+                    achievement.DateUnlocked = DateTime.Now;
 
-                    // Add achievement to the dictionary. this will fix search & filter unlockable state
-                    var unlockedAchievement = DGAchievements[AchievementIndex];
-                    unlockedAchievement.IsUnlockable = false;
-                    unlockedAchievement.ProgressState = StringConstants.Achieved;
-                    unlockedAchievement.DateUnlocked = DateTime.Now;
-
-                    if (!_unlockedAchievements.ContainsKey(unlockedAchievement.ID))
+                    if (!_unlockedAchievements.ContainsKey(achievement.ID))
                     {
-                        _unlockedAchievements.Add(unlockedAchievement.ID, unlockedAchievement);
+                        _unlockedAchievements.Add(achievement.ID, achievement);
                     }
 
-                    CollectionViewSource.GetDefaultView(DGAchievements).Refresh();
+                    if (showIndividualSnackbar)
+                    {
+                        _snackbarService.Show("Achievement Unlocked", $"{achievement.Name} has been unlocked",
+                            ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
+                    }
+
+                    return true;
                 }
                 catch (HttpRequestException ex)
                 {
-                    _snackbarService.Show("Error: Achievement Not Unlocked",
-                        $"{DGAchievements[AchievementIndex].Name} was not unlocked", ControlAppearance.Danger,
-                        new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+                    if (showIndividualSnackbar)
+                    {
+                        _snackbarService.Show("Error: Achievement Not Unlocked",
+                            $"{achievement.Name} was not unlocked: {ex.Message}", ControlAppearance.Danger,
+                            new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+                    }
+                    return false;
                 }
             }
             else
             {
                 if (EventsToken == null || HomeViewModel.IsEventsTokenExpired())
                 {
-                    ContentDialogResult result = await _contentDialogService.ShowSimpleDialogAsync(
-                        new SimpleContentDialogCreateOptions()
-                        {
-                            Title = EventsToken == null
-                                ? "Error: You have not set an events token"
-                                : "Error: Your events token has expired",
-                            Content = EventsToken == null
-                                ? "To unlock event based games you must supply an events token. You can set one up in Settings."
-                                : "Your events token has expired and needs to be refreshed before unlocking.",
-                            PrimaryButtonText = "Go to Settings",
-                            CloseButtonText = "Close",
-                        });
-
-                    if (result == ContentDialogResult.Primary)
-                        _navigationService.Navigate(typeof(SettingsPage));
-
-                    return;
-                }
-
-                // TODO: move this over to the rest api?
-                var requestbody = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + $"\\XAU\\Events\\{TitleIDOverride}.json");
-                DateTime timestamp = DateTime.UtcNow;
-                foreach (var i in EventsData.Achievements[DGAchievements[AchievementIndex].ID.ToString()])
-                {
-                    var ReplacementData = i.Value;
-                    switch (ReplacementData.ReplacementType.ToString())
+                    if (showIndividualSnackbar)
                     {
-                        case "Replace":
-                            {
-                                requestbody = requestbody.Replace(ReplacementData.Target.ToString(), ReplacementData.Replacement.ToString());
-                                break;
-                            }
-                        case "RangeInt":
-                            {
-                                int min = ReplacementData.Min;
-                                int max = ReplacementData.Max;
-                                Random random = new Random();
-                                int randomint = random.Next(min, max);
-                                requestbody = requestbody.Replace(ReplacementData.Target.ToString(), randomint.ToString());
-                                break;
-                            }
-                        case "RangeFloat":
-                            {
-                                float min = ReplacementData.Min;
-                                float max = ReplacementData.Max;
-                                Random random = new Random();
-                                float randomfloat = (float)random.NextDouble() * (max - min) + min;
-                                requestbody = requestbody.Replace(ReplacementData.Target.ToString(), randomfloat.ToString());
-                                break;
-                            }
-                        case "StupidFuckingLDAPTimestamp":
-                            {
-                                long ldapTimestamp = DateTime.Now.ToFileTime();
-                                requestbody = requestbody.Replace(ReplacementData.Target.ToString(), ldapTimestamp.ToString());
-                                break;
-                            }
-                        default:
-                            {
-                                _snackbarService.Show("Error: Bad Achievement Data", "Something went wrong with the achievement data", ControlAppearance.Danger,
-                                                                                  new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
-                                return;
-                            }
-
+                        _snackbarService.Show("Error", "Events token is missing or expired. Set one in Settings.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
                     }
+                    return false;
                 }
-                requestbody = requestbody.Replace("REPLACETIME", timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"));
-                requestbody = requestbody.Replace("REPLACESEQ", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
-                requestbody = requestbody.Replace("REPLACEXUID", HomeViewModel.XUIDOnly);
-                requestbody = JObject.Parse(requestbody).ToString(Formatting.None);
-                var bodyconverted = new StringContent(requestbody, Encoding.UTF8, "application/x-json-stream");
+
                 try
                 {
+                    var eventFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "XAU", "Events", $"{TitleIDOverride}.json");
+                    if (!File.Exists(eventFilePath))
+                    {
+                        return false;
+                    }
+
+                    var requestbody = File.ReadAllText(eventFilePath);
+                    DateTime timestamp = DateTime.UtcNow;
+                    var aidKey = achievement.ID.ToString();
+
+                    if (EventsData?.Achievements != null && EventsData.Achievements[aidKey] != null)
+                    {
+                        foreach (var i in EventsData.Achievements[aidKey])
+                        {
+                            var ReplacementData = i.Value;
+                            switch (ReplacementData.ReplacementType.ToString())
+                            {
+                                case "Replace":
+                                    requestbody = requestbody.Replace(ReplacementData.Target.ToString(), ReplacementData.Replacement.ToString());
+                                    break;
+                                case "RangeInt":
+                                    int min = ReplacementData.Min;
+                                    int max = ReplacementData.Max;
+                                    int randomint = Random.Shared.Next(min, max);
+                                    requestbody = requestbody.Replace(ReplacementData.Target.ToString(), randomint.ToString());
+                                    break;
+                                case "RangeFloat":
+                                    float minF = ReplacementData.Min;
+                                    float maxF = ReplacementData.Max;
+                                    float randomfloat = (float)Random.Shared.NextDouble() * (maxF - minF) + minF;
+                                    requestbody = requestbody.Replace(ReplacementData.Target.ToString(), randomfloat.ToString(CultureInfo.InvariantCulture));
+                                    break;
+                                case "StupidFuckingLDAPTimestamp":
+                                    long ldapTimestamp = DateTime.Now.ToFileTime();
+                                    requestbody = requestbody.Replace(ReplacementData.Target.ToString(), ldapTimestamp.ToString());
+                                    break;
+                            }
+                        }
+                    }
+
+                    requestbody = requestbody.Replace("REPLACETIME", timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"));
+                    requestbody = requestbody.Replace("REPLACESEQ", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+                    requestbody = requestbody.Replace("REPLACEXUID", _sessionService.Xuid);
+                    requestbody = JObject.Parse(requestbody).ToString(Formatting.None);
+                    var bodyconverted = new StringContent(requestbody, Encoding.UTF8, "application/x-json-stream");
+
                     await _xboxRestAPI.UnlockEventBasedAchievement(_sessionService.EventsToken ?? "", bodyconverted);
 
-                    _snackbarService.Show("Achievement Unlocked", $"{DGAchievements[AchievementIndex].Name} has been unlocked",
-                        ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
-                    DGAchievements[AchievementIndex].IsUnlockable = false;
-                    DGAchievements[AchievementIndex].ProgressState = "Achieved";
-                    DGAchievements[AchievementIndex].DateUnlocked = DateTime.Now;
-                    CollectionViewSource.GetDefaultView(DGAchievements).Refresh();
-                }
-                catch
-                {
-                    _snackbarService.Show("Error: Achievement Not Unlocked",
-                        $"{DGAchievements[AchievementIndex].Name} was not unlocked", ControlAppearance.Danger,
-                        new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
-                }
+                    achievement.IsUnlockable = false;
+                    achievement.ProgressState = StringConstants.Achieved;
+                    achievement.DateUnlocked = DateTime.Now;
 
+                    if (!_unlockedAchievements.ContainsKey(achievement.ID))
+                    {
+                        _unlockedAchievements.Add(achievement.ID, achievement);
+                    }
+
+                    if (showIndividualSnackbar)
+                    {
+                        _snackbarService.Show("Achievement Unlocked", $"{achievement.Name} has been unlocked",
+                            ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), _snackbarDuration);
+                    }
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    if (showIndividualSnackbar)
+                    {
+                        _snackbarService.Show("Error: Achievement Not Unlocked",
+                            $"{achievement.Name} was not unlocked: {ex.Message}", ControlAppearance.Danger,
+                            new SymbolIcon(SymbolRegular.ErrorCircle24), _snackbarDuration);
+                    }
+                    return false;
+                }
+            }
+        }
+
+        public async void UnlockAchievement(int AchievementIndex)
+        {
+            if (AchievementIndex >= 0 && AchievementIndex < DGAchievements.Count)
+            {
+                var achievement = DGAchievements[AchievementIndex];
+                await PerformUnlockAchievementAsync(achievement, showIndividualSnackbar: true);
+                CollectionViewSource.GetDefaultView(DGAchievements)?.Refresh();
+            }
+        }
+
+        [RelayCommand]
+        public async Task StartBatchUnlock()
+        {
+            var selected = DGAchievements.Where(a => a.IsSelected && a.ProgressState != StringConstants.Achieved && a.IsUnlockable).ToList();
+            if (selected.Count == 0)
+            {
+                _snackbarService.Show("No Selection", "Please select one or more locked achievements to unlock.", ControlAppearance.Caution, new SymbolIcon(SymbolRegular.Warning24), _snackbarDuration);
+                return;
             }
 
+            IsBatchRunning = true;
+            OnPropertyChanged(nameof(BatchRunningVisibility));
+            OnPropertyChanged(nameof(BatchNotRunningVisibility));
+            _batchCts = new CancellationTokenSource();
+            var token = _batchCts.Token;
+
+            if (AutoSpoofDuringBatch)
+            {
+                SpoofGame();
+            }
+
+            int total = selected.Count;
+            int successful = 0;
+
+            try
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    if (token.IsCancellationRequested) break;
+
+                    var achievement = selected[i];
+                    BatchProgress = (i / (double)total) * 100;
+                    BatchStatusText = $"Unlocking {i + 1} of {total}: {achievement.Name}...";
+
+                    bool ok = await PerformUnlockAchievementAsync(achievement, showIndividualSnackbar: false);
+                    if (ok)
+                    {
+                        successful++;
+                        achievement.IsSelected = false;
+                    }
+
+                    CollectionViewSource.GetDefaultView(DGAchievements)?.Refresh();
+
+                    if (i < total - 1)
+                    {
+                        int delaySec = DelayPresetIndex switch
+                        {
+                            0 => Random.Shared.Next(1, 4),      // Fast: 1-3s
+                            1 => Random.Shared.Next(15, 46),    // Realistic: 15-45s
+                            2 => Random.Shared.Next(120, 301),  // Extended: 2-5m
+                            _ => 1                              // Instant
+                        };
+
+                        for (int s = delaySec; s > 0; s--)
+                        {
+                            if (token.IsCancellationRequested) break;
+                            BatchStatusText = $"Unlocked {achievement.Name} • Next in {s}s ({i + 1}/{total})";
+                            await Task.Delay(1000, token);
+                        }
+                    }
+                }
+
+                BatchProgress = 100;
+                BatchStatusText = token.IsCancellationRequested
+                    ? $"Batch cancelled. Unlocked {successful} of {total}."
+                    : $"Completed! Successfully unlocked {successful} of {total} achievements.";
+
+                _snackbarService.Show("Batch Complete", BatchStatusText, ControlAppearance.Success, new SymbolIcon(SymbolRegular.Checkmark24), TimeSpan.FromSeconds(4));
+            }
+            catch (OperationCanceledException)
+            {
+                BatchStatusText = $"Batch cancelled by user. ({successful}/{total} unlocked)";
+            }
+            catch (Exception ex)
+            {
+                BatchStatusText = $"Batch encountered an error: {ex.Message}";
+            }
+            finally
+            {
+                IsBatchRunning = false;
+                OnPropertyChanged(nameof(BatchRunningVisibility));
+                OnPropertyChanged(nameof(BatchNotRunningVisibility));
+                UpdateSelectedCount();
+            }
+        }
+
+        [RelayCommand]
+        public void CancelBatchUnlock()
+        {
+            if (_batchCts != null && !_batchCts.IsCancellationRequested)
+            {
+                _batchCts.Cancel();
+                BatchStatusText = "Cancelling batch unlock...";
+            }
         }
 
         [RelayCommand]
