@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 // OpenAPI or Swagger doesn't exist. But let's try and type the things we need to make parsing more readable
 // https://learn.microsoft.com/en-us/gaming/gdk/_content/gc/reference/live/rest/atoc-xboxlivews-reference
 
@@ -210,11 +212,22 @@ public class XboxTitle
 
 public class BasicAchievementDetails
 {
+    [JsonProperty("currentAchievements")]
     public int CurrentAchievements { get; set; }
+
+    [JsonProperty("totalAchievements")]
     public int TotalAchievements { get; set; }
+
+    [JsonProperty("currentGamerscore")]
     public int CurrentGamerscore { get; set; }
+
+    [JsonProperty("totalGamerscore")]
     public int TotalGamerscore { get; set; }
+
+    [JsonProperty("progressPercentage")]
     public double ProgressPercentage { get; set; }
+
+    [JsonProperty("sourceVersion")]
     public int SourceVersion { get; set; }
 }
 

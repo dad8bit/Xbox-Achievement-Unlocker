@@ -254,15 +254,32 @@ namespace XAU.ViewModels.Pages
 
                 var displayImage = title.DisplayImage ?? "pack://application:,,,/Assets/cirno.png";
 
+                string achText = totalAchievements > 0
+                    ? $"{currentAchievements}/{totalAchievements}"
+                    : currentAchievements.ToString();
+
+                string gsText = totalGamerscore > 0
+                    ? $"{currentGamerscore}/{totalGamerscore}"
+                    : currentGamerscore.ToString();
+
+                double calcProgress = progress;
+                if (calcProgress <= 0)
+                {
+                    if (totalGamerscore > 0 && currentGamerscore > 0)
+                        calcProgress = (currentGamerscore / (double)totalGamerscore) * 100.0;
+                    else if (totalAchievements > 0 && currentAchievements > 0)
+                        calcProgress = (currentAchievements / (double)totalAchievements) * 100.0;
+                }
+
                 gameList.Add(new Game
                 {
                     Title = title.Name ?? "Unknown",
                     Image = displayImage,
-                    Gamerscore = $"{currentGamerscore}/{totalGamerscore}",
-                    CurrentAchievements = $"{currentAchievements}/{totalAchievements}",
-                    Progress = progress.ToString(),
+                    Gamerscore = gsText,
+                    CurrentAchievements = achText,
+                    Progress = calcProgress.ToString("F0"),
                     Index = item.Index.ToString(),
-                    NumericProgress = progress,
+                    NumericProgress = calcProgress,
                     NumericGamerscore = currentGamerscore
                 });
             }
